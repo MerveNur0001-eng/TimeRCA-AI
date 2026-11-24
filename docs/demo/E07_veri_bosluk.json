@@ -1,0 +1,204 @@
+﻿{
+    "durum":  "tamamlandi",
+    "rapor":  {
+                  "window":  "2023-11-13 00:00 - 2023-11-13 23:00",
+                  "deviation":  true,
+                  "median_ratio":  null,
+                  "hypotheses":  [
+                                     {
+                                         "name":  "veri_hatasi",
+                                         "status":  "destekliyor",
+                                         "detail":  "ETL\u0027de işaretli saat: 0; pencereyle kesişen boşluk: 1; temiz saat: 0.",
+                                         "sources":  [
+                                                         "check_etl_log",
+                                                         "compare_same_weekday_history"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "hava",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "Yağış 27.6 mm (dönem günlük p90: 7.2 mm); azami rüzgâr 26.7 km/s.",
+                                         "sources":  [
+                                                         "get_weather"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "tatil",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "Pencerede resmî tatil yok.",
+                                         "sources":  [
+                                                         "get_calendar"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "deprem",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "İlgili deprem kaydı yok.",
+                                         "sources":  [
+                                                         "get_earthquakes"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "aciklanamayan",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "Diğer hipotezlerin hiçbiri sapmayı açıklamıyorsa desteklenir.",
+                                         "sources":  [
+
+                                                     ]
+                                     }
+                                 ],
+                  "confidence":  "orta",
+                  "needs_human":  false,
+                  "summary_tr":  "2023-11-13 00:00 - 2023-11-13 23:00 aralığındaki saatlerin hiçbiri kaynak dosyada yok: veri hatası destekleniyor.",
+                  "caveats":  [
+                                  "Baseline: önceki 4 haftanın aynı gün-saati medyanı; tatil haftaları baseline\u0027ı kirletebilir.",
+                                  "Hava: Open-Meteo reanalysis, tek nokta; istasyon ölçümü değil.",
+                                  "ETL logu yalnızca bizim yüklememizde görülenleri kaydeder, boşluğun nedenini söylemez.",
+                                  "Eşikler Nisan 2023 üzerinde ayarlandı; dış etiketli bağımsız ilk ölçüm (v3, 13 pencere) küçük örneklemlidir, ayrıntı docs/07-degerlendirme.md."
+                              ],
+                  "notes":  [
+                                "pencerenin tum saatleri kaynak dosyada yok"
+                            ],
+                  "insan_karari_2":  null,
+                  "ek_inceleme":  null,
+                  "kaynakli_notlar":  [
+                                          {
+                                              "id":  "etl_araci.md#1",
+                                              "file":  "etl_araci.md",
+                                              "tool":  "check_etl_log",
+                                              "text":  "Girdi: başlangıç ve bitiş zamanı. Çıktı: pencereye değen veya pencereye 1 saat içinde bitişik eksik saat blokları, düşük hücre kapsamı saatleri, yoğunluk şüpheli saatler."
+                                          },
+                                          {
+                                              "id":  "etl_araci.md#2",
+                                              "file":  "etl_araci.md",
+                                              "tool":  "check_etl_log",
+                                              "text":  "Blok pencereyle çakışıyorsa overlaps_window true olur. Pencere ay sınırını aşarsa ilgili tüm ayların logu okunur, logu olmayan aylar months_without_log alanında bildirilir."
+                                          },
+                                          {
+                                              "id":  "etl_araci.md#3",
+                                              "file":  "etl_araci.md",
+                                              "tool":  "check_etl_log",
+                                              "text":  "Sınır: log yalnızca bizim yüklememizde görülenleri kaydeder, boşluğun nedenini söylemez."
+                                          },
+                                          {
+                                              "id":  "baseline_araci.md#1",
+                                              "file":  "baseline_araci.md",
+                                              "tool":  "compare_same_weekday_history",
+                                              "text":  "Girdi: başlangıç ve bitiş zamanı. Baseline: önceki 4 haftanın aynı gün ve saatinin medyanı, en az 3 geçerli hafta gerekir, yoksa o saat için baseline yok denir."
+                                          },
+                                          {
+                                              "id":  "baseline_araci.md#2",
+                                              "file":  "baseline_araci.md",
+                                              "tool":  "compare_same_weekday_history",
+                                              "text":  "Çıktı: temiz saatlerin medyan oranı (median_ratio_excl_etl_flagged), ETL\u0027in işaretlediği saat sayısı, 0,7 altı ve 1,3 üstü temiz saat sayıları, en sapan temiz saatler, baseline günleri (baseline_days_of_first_hour)."
+                                          },
+                                          {
+                                              "id":  "baseline_araci.md#3",
+                                              "file":  "baseline_araci.md",
+                                              "tool":  "compare_same_weekday_history",
+                                              "text":  "ETL\u0027in işaretlediği saatler ayrı sayılır, aksi halde tek bozuk saat günün özetini bozar."
+                                          },
+                                          {
+                                              "id":  "baseline_araci.md#4",
+                                              "file":  "baseline_araci.md",
+                                              "tool":  "compare_same_weekday_history",
+                                              "text":  "Sınır: tatil veya yağışlı haftalar baseline\u0027ı kirletebilir, baseline günlerini takvim ve hava aracıyla kontrol et. Saatlik oranlar gürültülüdür, çok saatlik ve günlük düzeye güvenilir."
+                                          },
+                                          {
+                                              "id":  "baseline_araci.md#5",
+                                              "file":  "baseline_araci.md",
+                                              "tool":  "compare_same_weekday_history",
+                                              "text":  "Örnek: 4 Mayıs 2023 baseline Perşembe\u0027leri (6, 13, 20, 27 Nisan) günlük toplamda birbirine yakındı (4,05-4,16 milyon), sapma baseline kirliliğinden gelmiyor gibi görünüyor."
+                                          }
+                                      ],
+                  "insan_karari":  null,
+                  "nihai_durum":  "otomatik",
+                  "arac_ciktilari":  {
+                                         "check_etl_log":  {
+                                                               "tool":  "check_etl_log",
+                                                               "months_checked":  [
+                                                                                      "2023-11"
+                                                                                  ],
+                                                               "months_without_log":  [
+
+                                                                                      ],
+                                                               "gaps_near_window":  [
+                                                                                        {
+                                                                                            "start":  "2023-11-13 00:00:00",
+                                                                                            "end":  "2023-11-14 23:00:00",
+                                                                                            "hours":  48,
+                                                                                            "overlaps_window":  true
+                                                                                        }
+                                                                                    ],
+                                                               "low_cell_coverage_hours":  [
+
+                                                                                           ],
+                                                               "density_suspect_hours":  [
+
+                                                                                         ],
+                                                               "limits":  "Log yalniz yuklemede gorulenleri kaydeder, bosluk nedenini soylemez. Logu olmayan aylar icin bilgi yok (months_without_log)."
+                                                           },
+                                         "compare_same_weekday_history":  {
+                                                                              "tool":  "compare_same_weekday_history",
+                                                                              "hours_in_window":  24,
+                                                                              "hours_missing":  24,
+                                                                              "hours_no_baseline":  0,
+                                                                              "hours_etl_flagged":  0,
+                                                                              "median_ratio_all":  null,
+                                                                              "median_ratio_excl_etl_flagged":  null,
+                                                                              "n_clean_hours":  0,
+                                                                              "n_clean_below_0.7":  0,
+                                                                              "n_clean_above_1.3":  0,
+                                                                              "most_deviant_clean_hours":  [
+
+                                                                                                           ],
+                                                                              "baseline_days_of_first_hour":  [
+                                                                                                                  "2023-11-06",
+                                                                                                                  "2023-10-30",
+                                                                                                                  "2023-10-23",
+                                                                                                                  "2023-10-16"
+                                                                                                              ],
+                                                                              "limits":  "Baseline = onceki 4 haftanin ayni gun-saati medyani, en az 3 gecerli hafta gerekir. baseline_days_of_first_hour icin get_calendar ve get_weather ile baseline kirliligini kontrol et."
+                                                                          },
+                                         "get_weather":  {
+                                                             "tool":  "get_weather",
+                                                             "hours":  24,
+                                                             "precip_total_mm":  27.6,
+                                                             "precip_max_hour_mm":  6.6,
+                                                             "wind_max_kmh":  26.7,
+                                                             "temp_mean_c":  14.4,
+                                                             "period_daily_precip_median_mm":  0.1,
+                                                             "period_daily_precip_p90_mm":  7.2,
+                                                             "limits":  "Open-Meteo reanalysis, tek nokta (41.01, 28.98), istasyon olcumu degil, tum Istanbul\u0027u temsil etmez."
+                                                         },
+                                         "get_calendar":  {
+                                                              "tool":  "get_calendar",
+                                                              "days":  [
+                                                                           {
+                                                                               "date":  "2023-11-13",
+                                                                               "weekday":  "Monday",
+                                                                               "holiday":  null,
+                                                                               "day_before_holiday":  false
+                                                                           }
+                                                                       ],
+                                                              "limits":  "Yalniz resmi tatil/bayram. Arife yarim gunu, secim gunu, mac gibi etkinlikler yok."
+                                                          },
+                                         "get_earthquakes":  {
+                                                                 "tool":  "get_earthquakes",
+                                                                 "source":  "USGS FDSN, onceden indirilmis katalog (indirilen M\u003e=4, tam olan M\u003e=4,5)",
+                                                                 "n_relevant":  0,
+                                                                 "top_events":  [
+
+                                                                                ],
+                                                                 "limits":  "Katalog yaklasik M4,5 ustu icin tam (USGS ComCat dunya geneli tamlik M4,5), M4-4,5 arasi eksik olabilir. Alaka kurali: M\u003e=4.5 ve \u003c=500 km, veya M\u003e=6.5 her mesafe; bu esikler secimdir, trafik etkisi icin bilinen bir esik degil. Buyukluk ve mesafe tek basina nedensellik gostermez, zaman sirasina bak."
+                                                             }
+                                     },
+                  "veri_kalitesi_uyarisi":  {
+                                                "isaretli_saat":  0,
+                                                "eksik_saat":  24,
+                                                "toplam_saat":  24,
+                                                "eksik_oran":  1.0
+                                            },
+                  "degerlendirilemedi":  false
+              }
+}

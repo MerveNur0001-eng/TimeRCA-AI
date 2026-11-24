@@ -1,0 +1,22 @@
+﻿{
+    "durum":  "insan_onayi_bekleniyor",
+    "soru":  {
+                 "soru":  "Kanıtlar kesin bir neden vermiyor. Nasıl devam edelim?",
+                 "pencere":  "2022-11-23 00:00 - 2022-11-23 23:00",
+                 "guven":  "dusuk",
+                 "destekleyen":  [
+
+                                 ],
+                 "belirsiz":  [
+                                  "deprem"
+                              ],
+                 "notlar":  [
+                                "Ilgili deprem sayisi=1"
+                            ],
+                 "secenekler":  {
+                                    "onayla":  "kodun sonucunu kabul et",
+                                    "ek_inceleme":  "ek inceleme iste",
+                                    "reddet":  "sonucu reddet"
+                                }
+             }
+}

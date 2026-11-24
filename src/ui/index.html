@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trafik Anomali İnceleme Paneli</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1d2733;--mut:#5b6775;--line:#d9dee5;--acc:#1f4e79;--acc2:#e8eff6;--warn:#8a5a00;--warnbg:#fff4dc;--bad:#9b1c1c;--badbg:#fdeaea;--ok:#1b6b3a;--okbg:#e6f4ea}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--acc);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+header h1{font-size:17px;margin:0;font-weight:600}
+header small{opacity:.85;display:block;font-weight:400;font-size:12px}
+header label{font-size:12px;opacity:.9}
+header input{margin-left:6px;padding:4px 8px;border:1px solid #fff5;background:#ffffff1f;color:#fff;border-radius:3px;width:150px}
+main{max-width:1100px;margin:18px auto;padding:0 16px;display:grid;gap:16px}
+section{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:16px 18px}
+h2{font-size:14px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);font-weight:600}
+h3{font-size:14px;margin:14px 0 6px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.row label{display:grid;gap:3px;font-size:12px;color:var(--mut)}
+input,select,textarea{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:3px;background:#fff;color:var(--ink)}
+textarea{width:100%;min-height:60px}
+button{font:inherit;padding:6px 14px;border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:3px;cursor:pointer}
+button.sec{background:#fff;color:var(--acc)}
+button.danger{background:#fff;color:var(--bad);border-color:var(--bad)}
+button.gunlink{background:none;border:0;padding:0;color:var(--acc);text-decoration:underline;cursor:pointer;font:inherit}
+button:disabled{opacity:.5;cursor:default}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--mut);font-weight:600;background:#fafbfc}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;background:var(--acc2);color:var(--acc)}
+.tag.warn{background:var(--warnbg);color:var(--warn)}.tag.bad{background:var(--badbg);color:var(--bad)}.tag.ok{background:var(--okbg);color:var(--ok)}
+.note{color:var(--mut);font-size:12px}
+h2 .alt{text-transform:none;letter-spacing:0;font-weight:400;font-size:13px}
+.box{border:1px solid var(--line);border-left:4px solid var(--acc);padding:10px 12px;margin:10px 0;background:#fafbfc}
+.box.warn{border-left-color:var(--warn);background:var(--warnbg)}
+.box.bad{border-left-color:var(--bad);background:var(--badbg)}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:3px 12px;margin:6px 0}
+.kv b{color:var(--mut);font-weight:600}
+ul{margin:4px 0;padding-left:20px}
+details{margin-top:8px}summary{cursor:pointer;color:var(--acc)}
+.err{color:var(--bad)}
+.hide{display:none}
+pre{white-space:pre-wrap;word-break:break-word;background:#fafbfc;border:1px solid var(--line);padding:8px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Trafik Anomali İnceleme Paneli<small>İstanbul saatlik trafik yoğunluğu (İBB Açık Veri) · anormal günleri bulur, nedenlerini kanıtla araştırır</small></h1>
+  <label id="keywrap" style="display:none">API anahtarı<input id="key" type="password" autocomplete="off" placeholder="gerekirse"></label>
+</header>
+<main>
+
+<section id="s-grafik">
+  <h2>Trafik yoğunluğu</h2>
+  <div class="row">
+    <label>Görünüm<select id="g-mod"><option value="gunluk">Günlük (oran)</option><option value="saatlik">Saatlik</option></select></label>
+    <label>Başlangıç<input type="date" id="g1" value="2023-04-10"></label>
+    <label>Bitiş<input type="date" id="g2" value="2023-04-30"></label>
+    <button id="btn-grafik">Göster</button>
+    <span class="note">Günlük en fazla 62, saatlik en fazla 14 gün. Grafikte işaretli bir bölgeye ya da güne tıklayınca inceleme başlar.</span>
+  </div>
+  <div id="grafik-out"></div>
+</section>
+<section id="s-tara">
+  <h2>1. Anomali taraması <small class="note alt">- olağandışı günleri bulur</small></h2>
+  <div class="row">
+    <label>Başlangıç günü<input type="date" id="t1" value="2023-04-01"></label>
+    <label>Bitiş günü<input type="date" id="t2" value="2023-04-30"></label>
+    <button id="btn-tara">Tara</button>
+    <span class="note">En fazla 62 gün. Her gün, önceki 4 haftanın aynı günlerindeki tipik trafikle (normal düzey) karşılaştırılır. Verisinde sorun kaydedilen saatler hesaba katılmaz.</span>
+  </div>
+  <div id="tara-out"></div>
+</section>
+
+<section id="s-incele">
+  <h2>2. Pencere incelemesi <small class="note alt">- seçtiğiniz saatlerin nedenini araştırır</small></h2>
+  <div class="row">
+    <label>Başlangıç<input id="a1" placeholder="22.04.2023 02:00" size="17"></label>
+    <label>Bitiş<input id="a2" placeholder="22.04.2023 09:00" size="17"></label>
+    <button id="btn-incele">İncele</button>
+    <span class="note">Gün.ay.yıl saat:dakika yazın (örn. 22.04.2023 02:00), en fazla 14 gün. Tarama listesinden "İncele" ile de doldurulur.</span>
+  </div>
+  <div id="inc-out"></div>
+</section>
+
+<section id="s-onay" class="hide">
+  <h2>3. İnsan onayı</h2>
+  <div id="onay-out"></div>
+</section>
+
+<section id="s-ret" class="hide">
+  <h2>4. Ret nedeni</h2>
+  <div id="ret-out"></div>
+</section>
+
+<section id="s-soru">
+  <h2>Soru ve kaynak arama</h2>
+  <div class="row">
+    <label style="flex:1;min-width:260px">Soru<input id="q" style="width:100%" placeholder="Örn. 22.04.2023 neden düştü  veya  Nisan 2024 haftalık özet"></label>
+    <button id="btn-soru">Sor</button>
+  </div>
+  <div id="soru-out"></div>
+</section>
+
+</main>
+<script>
+const $ = id => document.getElementById(id);
+function el(tag, attrs, ...kids){
+  const n = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs||{})){
+    if (k==="class") n.className=v; else if (k==="onclick") n.onclick=v; else n.setAttribute(k,v);
+  }
+  for (const c of kids.flat()){ if (c==null||c===false) continue; n.append(c.nodeType?c:document.createTextNode(String(c))); }
+  return n;
+}
+const DURUM = {dusus:["Düşüş","bad"],artis:["Artış","warn"],eksik_veri:["Eksik veri","warn"],eksik_veri_ve_sapma:["Eksik veri + sapma","bad"],veri_yok:["Veri yok","bad"],degerlendirilemedi:["Değerlendirilemedi","warn"]};
+const HIP = {veri_hatasi:"Veri hatası",hava:"Hava",tatil:"Tatil / bayram",deprem:"Deprem",aciklanamayan:"Açıklanamayan"};
+const DESTEK = {destekliyor:["Destekliyor (kanıt var)","ok"],belirsiz:["Belirsiz (kesin değil)","warn"],desteklemiyor:["Desteklemiyor",""]};
+const NIHAI = {otomatik:["Otomatik tamamlandı","ok"],onaylandi:["İnsan onayladı","ok"],reddedildi:["İnsan reddetti","bad"],ek_inceleme_gerekli:["Ek inceleme gerekli","warn"]};
+const GUVEN = {dusuk:"Düşük",orta:"Orta",yuksek:"Yüksek"};
+function fill(n,...k){ n.replaceChildren(...k.flat().filter(x=>x!=null&&x!==false)); }
+const tag = (t,c) => el("span",{class:"tag "+(c||"")},t);
+
+async function api(path, body){
+  const h = {"Content-Type":"application/json"};
+  const k = $("key").value.trim(); if (k) h["X-API-Key"]=k;
+  const r = await fetch(path,{method:"POST",headers:h,body:JSON.stringify(body)});
+  let j = {}; try{ j = await r.json(); }catch(e){}
+  if (!r.ok) throw new Error(j.hata || ("HTTP "+r.status));
+  return j;
+}
+function busy(btn, on){ btn.disabled = on; btn.dataset.t = btn.dataset.t || btn.textContent; btn.textContent = on ? "Çalışıyor…" : btn.dataset.t; }
+function fail(box, e){ fill(box, el("p",{class:"err"},"Hata: "+e.message)); }
+
+/* ---- 0. grafik ---- */
+const NS="http://www.w3.org/2000/svg";
+function sv(tag, attrs, ...kids){ const n=document.createElementNS(NS,tag); for(const [k,v] of Object.entries(attrs||{})){ if(k==="onclick") n.onclick=v; else if(k==="onmousemove") n.onmousemove=v; else n.setAttribute(k,v);} for(const c of kids.flat()){ if(c!=null&&c!==false) n.append(c.nodeType?c:document.createTextNode(String(c))); } return n; }
+const GW=1040, GH=300, ML=56, MR=14, MT=12, MB=34;
+function scale(d0,d1,r0,r1){ return v => r0 + (v-d0)/(d1-d0||1)*(r1-r0); }
+function grafikCiz(r){
+  const out=$("grafik-out"), pts=r.noktalar, lo=r.esikler[0], hi=r.esikler[1];
+  const svg=sv("svg",{viewBox:`0 0 ${GW} ${GH}`,width:"100%",role:"img","aria-label":"Trafik yoğunluğu grafiği"});
+  const x=scale(0,Math.max(pts.length-1,1),ML,GW-MR);
+  const ticks=(y,fmt,vals)=>vals.map(v=>[sv("line",{x1:ML,x2:GW-MR,y1:y(v),y2:y(v),stroke:"#e3e7ec"}), sv("text",{x:ML-6,y:y(v)+4,"text-anchor":"end","font-size":11,fill:"#5b6775"},fmt(v))]);
+  const detay=el("div",{class:"note"},"Bir noktanın üzerine gelin."); 
+  if(r.mod==="gunluk"){
+    const vals=pts.map(p=>p.oran).filter(v=>v!=null);
+    const ymax=Math.max(1.3,...vals)*1.05, ymin=Math.min(0.5,...vals)*0.95;
+    const y=scale(ymax,ymin,MT,GH-MB), bw=gunKonum(0,pts.length).bw;
+    svg.append(...ticks(y,v=>v.toFixed(2),[0.5,0.7,0.85,1,1.15,1.3,1.5].filter(v=>v>=ymin&&v<=ymax)).flat());
+    svg.append(sv("text",{transform:`translate(12,${(MT+GH-MB)/2}) rotate(-90)`,"text-anchor":"middle","font-size":10,fill:"#5b6775"},"Normale göre oran"));
+    svg.append(sv("rect",{x:ML,y:y(hi),width:GW-ML-MR,height:y(lo)-y(hi),fill:"#1f4e79","fill-opacity":.07}));
+    pts.forEach((p,i)=>{
+      const cx=gunKonum(i,pts.length).cx, tp=el("title"); 
+      if(p.oran==null){ svg.append(sv("text",{x:cx,y:GH-MB-4,"text-anchor":"middle","font-size":10,fill:"#9b1c1c"},"×",sv("title",{},`${trGun(p.gun)}: ${p.durum==="veri_yok"?"veri yok":"baseline yok"}`))); }
+      else{
+        const col=(p.durum==="normal"&&p.etl_pay_yuksek)?"#b8a77a":{dusus:"#9b1c1c",artis:"#8a5a00",eksik_veri_ve_sapma:"#b8a77a",eksik_veri:"#b8a77a"}[p.durum]||"#8fa3b8", y0=y(1), y1=y(p.oran);
+        const g=sv("g",{style:"cursor:pointer",onclick:()=>incelePencere(p.baslangic,p.bitis)},
+          sv("rect",{x:cx-bw/2,y:Math.min(y0,y1),width:bw,height:Math.max(1,Math.abs(y1-y0)),fill:col}),
+          sv("rect",{x:cx-bw/2-2,y:MT,width:bw+4,height:GH-MB-MT,fill:"transparent"}),
+          sv("title",{},`${trGun(p.gun)}  normale göre oran ${p.oran}${p.eksik_saat?`  eksik ${p.eksik_saat}/${p.saat} saat`:""}${p.etl_pay_yuksek?"  • günün en az dörtte birinde veri sorunu var, “sapma yok” sonucu güvenilir değil":""}${p.etl_isaretli?`  veri sorunu kaydedilen ${p.etl_isaretli} saat`:""}${p.saatlik_bolge?`  · ${p.saatlik_bolge} saatlik bölge${p.saatlik_bolge_uzun?` (${p.saatlik_bolge_uzun} tanesi ≥6 saat)`:""}`:""}`));
+        svg.append(g);
+        if(p.saatlik_bolge_uzun) svg.append(sv("circle",{cx,cy:MT+5,r:3.5,fill:"#1f4e79"}));
+      }
+      if(pts.length<=31||i%Math.ceil(pts.length/31)===0) svg.append(sv("text",{x:cx,y:GH-MB+14,"text-anchor":"middle","font-size":10,fill:"#5b6775"},p.gun.slice(8,10)+"."+p.gun.slice(5,7)));
+    });
+    svg.append(sv("line",{x1:ML,x2:GW-MR,y1:y(1),y2:y(1),stroke:"#5b6775","stroke-dasharray":"4 3"}));
+  } else {
+    const vals=pts.flatMap(p=>[p.deger,p.baseline]).filter(v=>v!=null);
+    const ymax=Math.max(...vals,1)*1.05, y=scale(ymax,0,MT,GH-MB);
+    svg.append(...ticks(y,v=>Math.round(v).toLocaleString("tr-TR"),[0,.25,.5,.75,1].map(f=>f*ymax)).flat());
+    const idxOf=s=>pts.findIndex(p=>p.ts===s);
+    (r.bolgeler||[]).forEach(b=>{ const i0=idxOf(b.baslangic), i1=idxOf(b.bitis); if(i0<0||i1<0) return;
+      const c=b.yon==="dusus"?"#9b1c1c":"#8a5a00";
+      svg.append(sv("rect",{x:x(i0)-1,y:MT,width:Math.max(3,x(i1)-x(i0)+2),height:GH-MB-MT,fill:c,"fill-opacity":.13,style:"cursor:pointer",onclick:()=>incelePencere(b.baslangic,b.bitis)},
+        sv("title",{},`${bolgeAralik(b)}: ${b.yon==="dusus"?"düşüş":"artış"}, ${b.saat} saat, normale göre oran ${b.medyan_oran}`))); });
+    pts.forEach((p,i)=>{ if(p.etl) svg.append(sv("rect",{x:x(i)-2,y:MT,width:4,height:GH-MB-MT,fill:"#9aa5b1","fill-opacity":.4},sv("title",{},trGoster(p.ts)+": verisinde sorun kaydedilen saat"))); });
+    const path=(key,seg)=>{ let d="",pen=false; pts.forEach((p,i)=>{ const v=p[key]; if(v==null){pen=false;return;} d+=(pen?"L":"M")+x(i).toFixed(1)+","+y(v).toFixed(1); pen=true; }); return sv("path",{d,fill:"none",stroke:seg.c,"stroke-width":seg.w,"stroke-dasharray":seg.d||""}); };
+    const bandTop=[],bandBot=[]; pts.forEach((p,i)=>{ if(p.baseline!=null){ bandTop.push(x(i).toFixed(1)+","+y(p.baseline*hi).toFixed(1)); bandBot.unshift(x(i).toFixed(1)+","+y(p.baseline*lo).toFixed(1)); }});
+    if(bandTop.length) svg.append(sv("polygon",{points:bandTop.concat(bandBot).join(" "),fill:"#1f4e79","fill-opacity":.07}));
+    svg.append(path("baseline",{c:"#5b6775",w:1.2,d:"4 3"}), path("deger",{c:"#1f4e79",w:1.8}));
+    pts.forEach((p,i)=>{ if(p.ts.endsWith("00:00")||pts.length<=48&&i%3===0) svg.append(sv("text",{x:x(i),y:GH-MB+14,"text-anchor":"middle","font-size":10,fill:"#5b6775"},p.ts.endsWith("00:00")?p.ts.slice(8,10)+"."+p.ts.slice(5,7):p.ts.slice(11,13)+"h")); });
+    svg.append(sv("rect",{x:ML,y:MT,width:GW-ML-MR,height:GH-MB-MT,fill:"transparent",onmousemove:ev=>{ const bb=svg.getBoundingClientRect(), px=(ev.clientX-bb.left)/bb.width*GW, i=Math.max(0,Math.min(pts.length-1,Math.round((px-ML)/(GW-ML-MR)*(pts.length-1)))), p=pts[i];
+      detay.textContent=`${trGoster(p.ts)}  değer ${p.deger==null?"yok":Math.round(p.deger)}  beklenen ${p.baseline==null?"yok":Math.round(p.baseline)}  oran ${p.oran==null?"–":p.oran}`; }}));
+  }
+  const bolAll=(r.bolgeler||[]).slice().sort((a,b)=>b.siddet-a.siddet), bol=bolAll.slice(0,5), diger=bolAll.slice(5);
+  const tablo=list=>el("table",{}, el("thead",{},el("tr",{},...["Bölge","Yön","Saat","Normale göre oran",""].map(h=>el("th",{},h)))),
+    el("tbody",{},list.map(b=>el("tr",{},el("td",{},bolgeAralik(b)),el("td",{},tag(b.yon==="dusus"?"Düşüş":"Artış",b.yon==="dusus"?"bad":"warn")),el("td",{},b.saat),el("td",{},b.medyan_oran),
+      el("td",{},el("button",{class:"sec",onclick:()=>incelePencere(b.baslangic,b.bitis)},"İncele"))))));
+  const veriYok=(r.noktalar||[]).length>0&&(r.mod==="gunluk"?r.noktalar.every(p=>p.durum==="veri_yok"):r.noktalar.every(p=>p.deger==null));
+  const tb=r.taban, tbMetin=tb&&tb.gun ? `Bu veri setinde (${tb.gun} gün) en az 3 saatlik bir bölge günlerin %${Math.round((tb.bolgeli_gun_orani||0)*100)}'inde başlar; 12 saati aşan bölge ${tb.bolge_12h_gun_basina?("yaklaşık "+Math.round(1/tb.bolge_12h_gun_basina)+" günde bir"):"nadir"} görülür. Kısa bölgeler sıradan dalgalanma olabilir.${tb.bolgeli_gun_orani_uzun!=null?` Günlük grafikteki mavi nokta yalnızca en az ${tb.nokta_min_saat} saatlik bölgeleri gösterir (günlerin %${Math.round(tb.bolgeli_gun_orani_uzun*100)}'inde).`:""}` : null;
+  fill(out, svg, detay,
+    el("p",{class:"note"}, r.mod==="gunluk" ? "Çubuk: o günün trafiğinin normale oranı (1,0 = normal; önceki 4 haftanın aynı günlerindeki tipik düzey). Mavi nokta: o gün en az "+((r.taban&&r.taban.nokta_min_saat)||6)+" saat süren olağandışı bir dönem var. Bej çubuk: günün saatlerinin en az dörtte biri eksik ya da hatalı, sonuç güvenilir değil. ×: veri yok." : "Düz çizgi: gerçek trafik; kesikli çizgi: normal düzey; bant: normalin ±%15'i. Gölgeli bölge: üst üste en az 3 saat bandın dışında. Gri şerit: verisinde sorun kaydedilen saat, hesaba katılmaz."),
+    bol.length ? el("div",{}, el("p",{class:"note"},"Şiddete göre ilk "+bol.length+" bölge (saat sayısı × sapma büyüklüğü):"), tablo(bol)) : el("p",{class:"note"},veriYok?"Seçilen aralıkta kaynak veri yok; bölge hesaplanamaz.":"İşaretli bölge yok."),
+    diger.length ? el("details",{},el("summary",{},"Diğer "+diger.length+" bölge"), tablo(diger)) : null,
+    tbMetin ? el("p",{class:"note"},tbMetin) : null,
+    el("details",{},el("summary",{},"Grafiği okurken dikkat"), el("ul",{},r.not.map(t=>el("li",{},t)))));
+}
+/* tr-tarih */
+function trGoster(s){
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(String(s||""));
+  return m ? m[3]+"."+m[2]+"."+m[1]+" "+m[4]+":"+m[5] : s;
+}
+function trCoz(s){
+  s = String(s||"");
+  let m = /^\s*(\d{4})-(\d{2})-(\d{2})[ T]+(\d{2}):(\d{2})\s*$/.exec(s);
+  if (m) return m[1]+"-"+m[2]+"-"+m[3]+" "+m[4]+":"+m[5];
+  m = /^\s*(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})[ T]+(\d{1,2}):(\d{2})\s*$/.exec(s);
+  if (!m) return null;
+  const g=+m[1], a=+m[2], y=+m[3], h=+m[4], d=+m[5];
+  if (a<1||a>12||g<1||g>31||h>23||d>59) return null;
+  const t = new Date(y,a-1,g);
+  if (t.getFullYear()!==y || t.getMonth()!==a-1 || t.getDate()!==g) return null;
+  const z = n => String(n).padStart(2,"0");
+  return y+"-"+z(a)+"-"+z(g)+" "+z(h)+":"+z(d);
+}
+function pencereBody(){
+  const ham1 = $("a1").value.trim(), ham2 = $("a2").value.trim();
+  if (!ham1 || !ham2) throw new Error("Başlangıç ve bitiş alanlarını GG.AA.YYYY SS:DD biçiminde girin (ör. 28.04.2024 00:00).");
+  const s = trCoz(ham1), e = trCoz(ham2);
+  if (!s) throw new Error("Başlangıç geçerli bir tarih ve saat değil. Biçim: GG.AA.YYYY SS:DD (ör. 28.04.2024 00:00).");
+  if (!e) throw new Error("Bitiş geçerli bir tarih ve saat değil. Biçim: GG.AA.YYYY SS:DD (ör. 28.04.2024 23:00).");
+  if (e < s) throw new Error("Bitiş, başlangıçtan önce olamaz.");
+  return {start:s, end:e};
+}
+function trMetin(s){
+  return String(s == null ? "" : s).replace(/(\d{4})-(\d{2})-(\d{2})( \d{2}:\d{2})?/g, (_, y, mo, d, hm) => d + "." + mo + "." + y + (hm || ""))
+    .replace(/ \(ETL\)/g, "").replace(/ETL logu/gi, "veri yükleme kaydı")
+    .replace(/dönem günlük p90: ([\d.,]+) mm/g, "dönemde günlerin %90'ında yağış en fazla $1 mm")
+    .replace(/Gün düzeyi medyan yerel etkileri seyreltebilir/g, "Günün tamamına bakmak kısa süreli yerel etkileri gizleyebilir")
+    .replace(/hipotezlerin/g, "olası nedenlerin").replace(/hipotez/g, "olası neden");
+}
+const KAYNAK_AD = {check_etl_log:"Veri yükleme kaydı", get_weather:"Hava verisi", get_earthquakes:"Deprem kaydı", get_calendar:"Resmî takvim", compare_same_weekday_history:"Geçmiş haftalarla karşılaştırma"};
+function kaynakAd(x){ return KAYNAK_AD[x] || x; }
+function trGun(s){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||""));
+  return m ? m[3]+"."+m[2]+"."+m[1] : s;
+}
+function gunKonum(i, n){
+  const band = (GW-ML-MR)/n;
+  return {cx: ML+(i+0.5)*band, bw: Math.max(2, Math.min(48, band*0.7))};
+}
+/* gunAralik: gun secicili alanlarda istemci dogrulamasi (sunucu mesajlari aksansiz geldigi icin burada Turkce verilir) */
+function gunAralik(s, e, enCok, ad){
+  const re = /^\d{4}-\d{2}-\d{2}$/;
+  if(!re.test(s||"") || !re.test(e||"")) throw new Error("Ba\u015flang\u0131\u00e7 ve biti\u015f tarihini se\u00e7in.");
+  if(e < s) throw new Error("Biti\u015f, ba\u015flang\u0131\u00e7tan \u00f6nce olamaz.");
+  const n = Math.round((Date.UTC(+e.slice(0,4), +e.slice(5,7)-1, +e.slice(8,10)) - Date.UTC(+s.slice(0,4), +s.slice(5,7)-1, +s.slice(8,10))) / 864e5) + 1;
+  if(n > enCok) throw new Error(ad + " en fazla " + enCok + " g\u00fcn olabilir (se\u00e7ilen: " + n + " g\u00fcn).");
+  return n;
+}
+function bolgeAralik(b){
+  const ayni = b.bitis.slice(0,10) === b.baslangic.slice(0,10);
+  return trGoster(b.baslangic) + " – " + (ayni ? b.bitis.slice(11) : trGoster(b.bitis));
+}
+/* /tr-tarih */
+function gunLink(g, metin){ return el("button",{class:"gunlink",title:"Bu günü 2. bölümde incele",onclick:()=>incelePencere(g+" 00:00",g+" 23:00")}, metin||trGun(g)); }
+function gunlarHucre(items, bos){ const k=[]; (items||[]).forEach((x,i)=>{ if (i) k.push("; "); k.push(gunLink(x.gun), x.ek||""); }); return el("td",{},...(k.length?k:[bos||"–"])); }
+function incelePencere(a,b){ $("a1").value=trGoster(a); $("a2").value=trGoster(b); $("s-incele").scrollIntoView({behavior:"smooth"}); incele(); }
+$("btn-grafik").onclick = async () => {
+  const b=$("btn-grafik"), out=$("grafik-out"); busy(b,true); fill(out, el("p",{class:"note"},"Seri hazırlanıyor…"));
+  try{
+    const mod=$("g-mod").value, s=$("g1").value, e=$("g2").value;
+    gunAralik(s, e, mod==="saatlik"?14:62, mod==="saatlik"?"Saatlik g\u00f6r\u00fcn\u00fcm":"G\u00fcnl\u00fck g\u00f6r\u00fcn\u00fcm");
+    const r = await api("/series",{mod, start: mod==="saatlik"? s+" 00:00" : s, end: mod==="saatlik"? e+" 23:00" : e});
+    grafikCiz(r);
+  }catch(e){ fail(out,e); } finally{ busy(b,false); }
+};
+/* ---- 1. tarama ---- */
+$("btn-tara").onclick = async () => {
+  const b=$("btn-tara"), out=$("tara-out"); busy(b,true); fill(out, el("p",{class:"note"},"Taranıyor, gün sayısına göre birkaç saniye sürebilir…"));
+  try{
+    gunAralik($("t1").value, $("t2").value, 62, "Tarama");
+    const r = await api("/scan",{start:$("t1").value,end:$("t2").value});
+    const rows = r.adaylar.map(a => { const d = DURUM[a.durum]||[a.durum,""];
+      return el("tr",{}, el("td",{},trMetin(a.gun)), el("td",{},tag(d[0],d[1])), el("td",{},a.medyan_oran==null?"–":a.medyan_oran),
+        el("td",{},a.eksik_saat+" / "+a.toplam_saat),
+        el("td",{},el("button",{class:"sec",onclick:()=>{ $("a1").value=trGoster(a.baslangic); $("a2").value=trGoster(a.bitis); $("s-incele").scrollIntoView({behavior:"smooth"}); incele(); }},"İncele"))); });
+    fill(out, 
+      el("p",{}, `${trMetin(r.aralik[0])} – ${trMetin(r.aralik[1])}: ${r.taranan} gün tarandı, `, el("b",{},r.adaylar.length+" olağandışı gün"), `, ${r.normal_sayisi} gün eşiği aşmadı.`),
+      r.adaylar.length ? el("table",{}, el("thead",{},el("tr",{},...["Gün","Durum","Normale göre oran","Eksik saat",""].map(x=>el("th",{},x)))), el("tbody",{},rows)) : el("p",{class:"note"},"Olağandışı gün yok."),
+      r.taranamayan.length ? el("details",{},el("summary",{},r.taranamayan.length+" gün taranamadı"), el("ul",{},r.taranamayan.map(t=>el("li",{},trMetin(t.gun+": "+t.hata))))) : null,
+      el("details",{},el("summary",{},"Tarama sınırları"), el("ul",{},r.sinirlar.map(t=>el("li",{},trMetin(t))))),
+      csvDugme({tarama:r}));
+  }catch(e){ fail(out,e); } finally{ busy(b,false); }
+};
+
+/* ---- 2. inceleme ve onay ---- */
+let karar = [];
+async function incele(){
+  karar = []; $("s-ret").classList.add("hide"); $("s-onay").classList.add("hide"); $("onay-out").replaceChildren(); await calistir();
+}
+$("btn-incele").onclick = incele;
+async function calistir(){
+  const b=$("btn-incele"), out=$("inc-out"); busy(b,true);
+  fill(out, el("p",{class:"note"},"Araçlar çağrılıyor, kanıtlar toplanıyor…"));
+  try{
+    const body = pencereBody();
+    if (karar[0]) body.karar = karar[0]; if (karar[1]) body.karar2 = karar[1];
+    const r = await api("/analyze", body);
+    if (r.durum==="insan_onayi_bekleniyor"){ fill(out, el("p",{class:"note"},"Kök neden kanıtla belirlenemedi: karar insana bırakıldı (aşağıda).")); onayGoster(r.soru); }
+    else { $("s-onay").classList.add("hide"); rapor(out, r.rapor); if (r.rapor.nihai_durum==="reddedildi") retGoster(r.rapor); }
+  }catch(e){ fail(out,e); } finally{ busy(b,false); }
+}
+function listeMetin(v){ return Array.isArray(v) ? (v.length? v.join(", "):"yok") : (typeof v==="object"&&v? JSON.stringify(v): String(v)); }
+function onayGoster(q){
+  const sec=$("s-onay"), out=$("onay-out"); sec.classList.remove("hide");
+  const kv = el("div",{class:"kv"});
+  const ad = {soru:"Soru",pencere:"İncelenen aralık",guven:"Güven",destekleyen:"Destekleyen",belirsiz:"Belirsiz",notlar:"Notlar",gun:"Gün",gun_bulgulari:"Gün bulguları"};
+  for (const [k,v] of Object.entries(q && typeof q==="object" ? q : {soru:q})){ kv.append(el("b",{},ad[k]||k), el("span",{}, trMetin(k==="notlar"&&Array.isArray(v)? v.join("; ") : listeMetin(v)))); }
+  const ikinci = karar.length>=1;
+  const btn = (t,v,cls) => el("button",{class:cls||"",onclick:()=>{ karar.push(v); calistir(); }},t);
+  fill(out, el("div",{class:"box warn"},kv),
+    el("p",{class:"note"}, ikinci ? "Ek inceleme sonucunu gördünüz; son kararınızı verin." : "Onay: kodun sonucunu kabul eder. Ek inceleme: gün bazında ek bulgu ister. Ret: sonucu reddeder, nedenini soracağız."),
+    el("div",{class:"row"}, btn("Onayla","onayla"), ikinci?null:btn("Ek inceleme iste","ek_inceleme","sec"), btn("Reddet","reddet","danger")));
+  sec.scrollIntoView({behavior:"smooth"});
+}
+function rapor(out, r){
+  const n = NIHAI[r.nihai_durum]||[r.nihai_durum,""];
+  const kids = [];
+  kids.push(el("div",{class:"box"+(r.needs_human?" warn":"")}, el("b",{},trMetin(r.summary_tr))));
+  if (r.genel_degerlendirme) kids.push(el("div",{class:"box"+(r.genel_degerlendirme.coklu_neden?" warn":"")},
+    el("b",{},"Genel değerlendirme: "), r.genel_degerlendirme.metin, el("div",{class:"note"},r.genel_degerlendirme.kapsam_siniri)));
+  kids.push(el("div",{class:"kv"},
+    el("b",{},"İncelenen aralık"),el("span",{},trMetin(r.window)),
+    el("b",{},"Normale göre oran"),el("span",{},r.median_ratio==null?"hesaplanamadı":r.median_ratio),
+    el("b",{},"Güven"),el("span",{},GUVEN[r.confidence]||r.confidence),
+    el("b",{},"İnsan gerekti"),el("span",{},r.needs_human?"evet":"hayır"),
+    el("b",{},"Nihai durum"),el("span",{},tag(n[0],n[1]))));
+  if (r.karisik_durum) kids.push(el("div",{class:"box warn"},"Eksik veri ve temiz saatlerde sapma birlikte: gerçek trafik değişimi dışlanamaz, insan incelemesi istendi."));
+  if (r.degerlendirilemedi) kids.push(el("div",{class:"box warn"},"Karşılaştırma için yeterli geçmiş hafta verisi yok: nedenler değerlendirilemedi."));
+  const vk = r.veri_kalitesi_uyarisi;
+  if (vk) kids.push(el("div",{class:"box warn"},`Veri kalitesi uyarısı: ${vk.eksik_saat}/${vk.toplam_saat} saat eksik, veri sorunu kaydedilen saat ${vk.isaretli_saat}`+(vk.etl_log_yok?", bu dönem için veri kontrol kaydı yok":"")+"."));
+  if ((r.olasi_nedenler||[]).length){
+    kids.push(el("h3",{},"Olası nedenler (sabit öncelik sırası, olasılık değildir)"));
+    kids.push(el("table",{},el("tbody",{},r.olasi_nedenler.map(x=>{ const d=DESTEK[x.durum]||[x.durum,""];
+      return el("tr",{},el("td",{},x.sira+"."),el("td",{},HIP[x.neden]||x.neden),el("td",{},tag(d[0],d[1])),el("td",{},trMetin(x.kanit))); }))));
+  } else kids.push(el("p",{class:"note"},"Desteklenen veya belirsiz bir neden yok."));
+  if ((r.olasi_nedenler||[]).some(x=>x.nedensellik_notu)) kids.push(el("p",{class:"note"},"Hava, tatil ve deprem bulguları zamansal çakışmadır; nedensellik kanıtı değildir."));
+  kids.push(el("h3",{},"Tüm olası nedenler"));
+  kids.push(el("table",{},el("thead",{},el("tr",{},...["Olası neden","Durum","Kanıt","Bilgi kaynağı"].map(x=>el("th",{},x)))),
+    el("tbody",{},r.hypotheses.map(h=>{ const d=DESTEK[h.status]||[h.status,""];
+      return el("tr",{},el("td",{},HIP[h.name]||h.name),el("td",{},tag(d[0],d[1])),el("td",{},trMetin(h.detail)),el("td",{},(Array.isArray(h.sources)?h.sources:[h.sources]).filter(Boolean).map(kaynakAd).join(", ")||"–")); }))));
+  const p = r.arac_plani;
+  if (p) kids.push(el("p",{class:"note"},`Bilgi kaynakları: ${p.cagrilan.length} kullanıldı, ${p.atlanan.length} atlandı (${trMetin(p.neden)}).`+(p.atlanan.length?" Atlanan: "+p.atlanan.map(kaynakAd).join(", ")+".":"")));
+  const sb = r.saatlik_bilgi;
+  if (sb && (sb["baseline_alti_0.7"]!=null || sb["baseline_ustu_1.3"]!=null))
+    kids.push(el("p",{class:"note"},`Saatlik bakış (bilgi amaçlı, sonucu değiştirmez): ${sb.temiz_saat} temiz saatin ${sb["baseline_alti_0.7"]} tanesi normal düzeyin %70 altında, ${sb["baseline_ustu_1.3"]} tanesi %130 üstünde. Günün tamamına bakmak kısa süreli yerel etkileri gizleyebilir.`));
+  const kb = r.kaynak_bilgisi||{};
+  if (Object.keys(kb).length) kids.push(el("details",{},el("summary",{},"Kullanılan kaynaklar, güncellik ve sınırları"),
+    el("table",{},el("tbody",{},Object.entries(kb).map(([k,v])=>el("tr",{},el("td",{},k),el("td",{},v.kaynak),el("td",{},v.guncellik),el("td",{},v.sinir)))))));
+  if ((r.kaynakli_notlar||[]).length) kids.push(el("details",{},el("summary",{},`Kaynaklı notlar (${r.kaynakli_notlar.length})`),el("ul",{},r.kaynakli_notlar.map(x=>el("li",{},el("b",{},x.id+": "),x.text)))));
+  kids.push(el("details",{},el("summary",{},"Sınırlar"),el("ul",{},(r.caveats||[]).map(x=>el("li",{},x)))));
+  kids.push(mdDugme(()=>raporMd(r)));
+  fill(out, ...kids);
+}
+
+/* ---- 4. ret nedeni ---- */
+const IDDIA = {veri_hatasi:"Veri hatası",tatil:"Tatil / bayram",hava:"Hava",deprem:"Deprem",sapma_yok:"Sapma yok",diger:"Diğer"};
+function retGoster(rep){
+  const sec=$("s-ret"), out=$("ret-out"); sec.classList.remove("hide");
+  const [s,e] = rep.window.split(" - ");
+  const sel = el("select",{id:"r-iddia"}, Object.entries(IDDIA).map(([k,v])=>el("option",{value:k},v)));
+  const ac = el("textarea",{id:"r-ac",placeholder:"Neden reddettiniz? Hangi bilgiye dayanıyorsunuz?"});
+  const kay = el("input",{id:"r-kay",placeholder:"Kaynak (haber, resmi duyuru, bağlantı…)",style:"width:100%"});
+  const res = el("div",{});
+  const gonder = el("button",{onclick:async()=>{ busy(gonder,true);
+    try{ const r = await api("/feedback",{start:s,end:e,iddia:sel.value,aciklama:ac.value,kaynak:kay.value});
+      fill(res, el("div",{class:"box"},
+        el("div",{class:"kv"},el("b",{},"Kayıt no"),el("span",{},r.id),el("b",{},"Kanıt durumu"),el("span",{},r.kanit_durumu),el("b",{},"Sonuç"),el("span",{},r.sonuc)),
+        el("ul",{},(r.gerekce||[]).map(x=>el("li",{},x)))),
+        el("p",{class:"note"},"Düzeltme otomatik kabul edilmez: iddia araç kanıtıyla sınandı ve kayıt olarak saklandı; sistemin kararını değiştirmez."));
+    }catch(x){ fail(res,x); } finally{ busy(gonder,false); } }},"Gönder");
+  fill(out, 
+    el("p",{},"Sonucu reddettiniz. Ret nedenini kaydedin; sistem iddiayı aynı araçlarla yeniden sınar."),
+    el("div",{class:"row"},el("label",{},"Senin iddian",sel)),
+    el("div",{style:"margin-top:8px"},ac), el("div",{style:"margin:8px 0"},kay), gonder, res);
+}
+/* ---- soru ---- */
+$("btn-soru").onclick = async () => {
+  const b=$("btn-soru"), out=$("soru-out"); busy(b,true);
+  try{
+    const r = await api("/ask",{soru:$("q").value});
+    const s = r.sonuc||{};
+    if (r.yol==="analiz" || s.tip==="bekliyor" || s.rapor){ 
+      fill(out, el("p",{class:"note"},"Bu soru pencere analizi olarak yorumlandı: "+(r.plan||[]).join(" → ")), el("pre",{},JSON.stringify(s,null,1)));
+    } else { fill(out, el("pre",{},JSON.stringify(r,null,1))); }
+  }catch(e){ fail(out,e); } finally{ busy(b,false); }
+};
+/* ---- okunur arayuz (adim12) ---- */
+const ADIM = {kapsam_kontrol:"Kapsam kontrolü",kb_ara:"Bilgi tabanında arama",kaynakli_yanit:"Kaynaklı yanıt",araclari_cagir:"Araçları çağırma",hipotezleri_puanla:"Hipotezleri değerlendirme",rapor:"Rapor",insan_onayi_bekleniyor:"İnsan onayı bekleniyor",hafta_coz:"Hafta çözme",ay_coz:"Ay çözme",gun_gun_tarama:"Gün gün tarama",en_sapmali_gun:"En sapmalı günü seçme",aciklama_yaz:"Açıklama yazma",insan_onayi:"İnsan onayı",llm_soru_anlama:"Soruyu anlama (LLM)",tarih_iste:"Tarih isteme",gun_karsilastir:"Gün karşılaştırma",haftalik_ozet:"Haftalık özet",takvim_kontrol:"Takvim kontrolü",tatil_haftalari:"Tatilden etkilenen haftalar",bayram_karsilastir:"Bayram karşılaştırma",saatlik_iliski_ozet:"Saatlik bağıntı",gun_profil_ozet:"Gün içi profil",tespit_ozet:"Tespit özeti",bayram_hava_ozet:"Bayramlarda trafik ve hava özeti",hava_iliski_ozet:"Trafik ve hava ilişkisi",hava_birlikte_ozet:"Trafik ve hava birlikte özeti",ay_karsilastir:"Ay karşılaştırma",ek_sinyal_hava_kalitesi:"Hava kalitesi çapraz kontrolü",normal_gun_aciklama:"Normal gün açıklaması",gun_siralama:"Gün sıralama",eksik_veri_say:"Eksik veri sayımı",hafta_ici_sonu:"Hafta içi / hafta sonu karşılaştırma",bayram_oncesi_sonrasi:"Bayram öncesi / sonrası",hafta_normal_aciklama:"Hafta normal açıklaması"};
+function yuzde(x){ return x==null ? "–" : String(x).replace(".",","); }
+function hipAd(k){ return HIP[k] || k; }
+function hamDetay(obj){ return el("details",{},el("summary",{},"Ayrıntılı veri (teknik)"),el("pre",{},JSON.stringify(obj,null,1))); }
+
+/* 3. insan onayi: ham JSON yerine duz Turkce */
+function onayGoster(q){
+  const sec=$("s-onay"), out=$("onay-out"); sec.classList.remove("hide");
+  const ikinci = karar.length>=1;
+  const kids = [];
+  if (q && typeof q==="object" && q.gun_bulgulari){
+    const g = q.gun_bulgulari, temiz = g.n_clean_hours;
+    kids.push(el("div",{class:"box warn"},
+      el("b",{},"Ek inceleme sonucu: "+q.gun+" günü (24 saatin tamamı)"),
+      el("ul",{},
+        el("li",{},`${g.hours_in_window} saatin ${g.hours_missing} tanesi kaynak dosyada eksik, ${g.hours_etl_flagged} saatte veri sorunu kaydedilmiş.`),
+        el("li",{},`Geriye kalan ${temiz} temiz (veri sorunu olmayan) saatin normale göre oranı ${yuzde(g.median_ratio_excl_etl_flagged)} (1,00 = normal düzey).`),
+        el("li",{},`Temiz saatlerin ${g["n_clean_below_0.7"]} tanesi normal düzeyin %70 altında, ${g["n_clean_above_1.3"]} tanesi %130 üstünde.`))));
+  } else {
+    const o = q && typeof q==="object" ? q : {soru:q};
+    const kv = el("div",{class:"kv"});
+    kv.append(el("b",{},"İncelenen aralık"),el("span",{},trMetin(o.pencere||"–")),
+      el("b",{},"Güven"),el("span",{},GUVEN[o.guven]||o.guven||"–"),
+      el("b",{},"Desteklenen neden"),el("span",{},(o.destekleyen||[]).length?o.destekleyen.map(hipAd).join(", "):"yok"),
+      el("b",{},"Belirsiz"),el("span",{},(o.belirsiz||[]).length?o.belirsiz.map(hipAd).join(", "):"yok"),
+      el("b",{},"Not"),el("span",{},Array.isArray(o.notlar)?o.notlar.join("; "):(o.notlar||"–")));
+    kids.push(el("div",{class:"box warn"},el("b",{},o.soru||"Kanıtlar kesin bir neden vermiyor. Nasıl devam edelim?"),kv));
+  }
+  const sec2 = (_,d,btn) => el("div",{style:"display:flex;gap:10px;align-items:center;margin:6px 0"},btn,el("span",{class:"note"},d));
+  const btn = (t,v,cls) => el("button",{class:cls||"",onclick:()=>{ karar.push(v); calistir(); }},t);
+  kids.push(el("p",{},el("b",{},ikinci ? "Son kararınızı verin:" : "Ne yapmak istersiniz?")));
+  kids.push(sec2("","Sonucu olduğu gibi kabul et (kayıt: insan onayladı).",btn("Onayla","onayla")));
+  if (!ikinci) kids.push(sec2("","Günün tamamı için ek bulgu göster, sonra karar ver.",btn("Ek inceleme iste","ek_inceleme","sec")));
+  kids.push(sec2("","Sonucu kabul etme; nedenini size soracağız.",btn("Reddet","reddet","danger")));
+  fill(out, ...kids);
+  sec.scrollIntoView({behavior:"smooth"});
+}
+
+/* soru ve kaynak arama: okunur kart */
+function notKarti(n){
+  const [dosya,no] = String(n.id||"").split("#");
+  return el("li",{},n.metin, el("div",{class:"note"},"Kaynak: "+dosya+(no?" (not "+no+")":"")+(n.etiket?" · "+n.etiket:"")));
+}
+/* takvim-notu */
+function takvimKutu(s){ const t = s.takvim_notu||[]; if (!t.length) return null;
+  return el("div",{class:"box"},el("b",{},"Takvim notu (ek bilgi; sonucu değiştirmez): "),t.map(x=>trGun(x.gun)+": "+x.notlar.join(", ")).join("; ")); }
+/* ek-sinyal */
+function havaUstUsteCiz(kutu, pts){
+  const vals = pts.flatMap(p=>[p.trafik,p.no2]).filter(v=>v!=null);
+  if (!vals.length){ fill(kutu, el("p",{class:"note"},"Bu aralık için saatlik oran hesaplanamadı (yeterli geçmiş hafta yok).")); return; }
+  const n = pts.length, ymax = Math.max(1.3,...vals)*1.05, ymin = Math.min(0.5,...vals)*0.95, x = scale(0,Math.max(1,n-1),ML,GW-MR), y = scale(ymax,ymin,MT,GH-MB);
+  const svg = sv("svg",{viewBox:`0 0 ${GW} ${GH}`,width:"100%",role:"img","aria-label":"Saatlik trafik ve NO2 oranı"});
+  svg.append(sv("rect",{x:ML,y:y(1.15),width:GW-ML-MR,height:y(0.85)-y(1.15),fill:"#eef3f8"}));
+  [ymin,0.85,1,1.15,ymax].forEach(v=>svg.append(sv("line",{x1:ML,x2:GW-MR,y1:y(v),y2:y(v),stroke:"#e3e7ec"}), sv("text",{x:ML-6,y:y(v)+4,"text-anchor":"end","font-size":11,fill:"#5b6775"},v.toFixed(2).replace(".",","))));
+  const adim = n>30 ? 6 : 3;
+  pts.forEach((p,i)=>{ if (i%adim===0) svg.append(sv("text",{x:x(i),y:GH-MB+14,"text-anchor":"middle","font-size":10,fill:"#5b6775"},p.ts.slice(n>24?5:11,16))); });
+  const yol = (key,c,w,d) => { let t="",pen=false; pts.forEach((p,i)=>{ const v=p[key]; if(v==null){pen=false;return;} t+=(pen?"L":"M")+x(i).toFixed(1)+","+y(v).toFixed(1); pen=true; });
+    return sv("path",{d:t,fill:"none",stroke:c,"stroke-width":w,"stroke-dasharray":d||""}); };
+  const C1="#1f4e79", C2="#c26a00";
+  svg.append(yol("trafik",C1,2), yol("no2",C2,2,"6 3"));
+  const detay = el("div",{class:"note"},"Bir saatin üzerine gelin.");
+  svg.append(sv("rect",{x:ML,y:MT,width:GW-ML-MR,height:GH-MB-MT,fill:"transparent",onmousemove:ev=>{ const bb=svg.getBoundingClientRect(), px=(ev.clientX-bb.left)/bb.width*GW, i=Math.max(0,Math.min(n-1,Math.round((px-ML)/(GW-ML-MR)*Math.max(1,n-1)))), p=pts[i];
+    const f = v => v==null?"yok":yuzde(Number(v).toFixed(2));
+    detay.textContent = p.ts+"   trafik: "+f(p.trafik)+"   NO2: "+f(p.no2)+"   PM10: "+f(p.pm10); }}));
+  fill(kutu, svg,
+    el("div",{class:"row",style:"gap:16px"},el("span",{style:"color:"+C1+";font-weight:600"},"━ Trafik oranı"),el("span",{style:"color:"+C2+";font-weight:600"},"╍ NO2 oranı"),el("span",{class:"note"},"Açık mavi bant: 0,85–1,15 (normal aralık)")),
+    detay, el("p",{class:"note"},"Oran = o saatin değeri / önceki 4 haftanın aynı gün ve saatindeki tipik değer. Yalnızca görsel karşılaştırmadır; sonucu değiştirmez ve nedeni kanıtlamaz."));
+}
+function havaUstUsteDugme(e){ const ar = e.aralik; if (!ar || ar.length!==2) return null;
+  const kutu = el("div",{}), btn = el("button",{class:"sec"},"Saatlik trafik ve NO2 eğrilerini üst üste göster");
+  btn.onclick = async () => { busy(btn,true); fill(kutu, el("p",{class:"note"},"Seri hazırlanıyor…"));
+    try{ const r = await api("/hava_saatlik",{start:ar[0]+" 00:00",end:ar[1]+" 23:00"});
+      if (!r.var){ fill(kutu, el("p",{class:"note"},"Hava kalitesi verisi yüklü değil.")); return; }
+      havaUstUsteCiz(kutu, r.noktalar);
+    }catch(x){ fail(kutu,x); } finally{ busy(btn,false); } };
+  return el("div",{},el("p",{},btn), kutu); }
+function sinyalKutu(s){ const e = s.ek_sinyal; if (!e) return null;
+  const gr = (e.aralik && e.aralik[0]===e.aralik[1]) ? havaUstUsteDugme(e) : null;
+  const f = x => x==null ? "–" : yuzde(Number(x).toFixed(2));
+  return el("div",{class:"box"},el("b",{},"Ek sinyal: hava kalitesi çapraz kontrolü (ek bilgi; sonucu değiştirmez). "),e.metin,
+    el("div",{class:"note"},"Normale göre oran: trafik "+f(e.trafik_orani)+", NO2 "+f(e.no2_orani)+", PM10 "+f(e.pm10_orani)+". Kaynak: "+e.kaynak+". Sonucu değiştirmez."),
+    el("div",{class:"note"},"Bu ne demek? Trafikteki sapma, aynı günün hava kirliliği ölçümleriyle karşılaştırılır. NO2 büyük ölçüde araç egzozundan geldiği için trafikle birlikte düşmesi ya da artması beklenir; PM10 toz ve partiküldür, yağış ve rüzgârdan da etkilenir. Uyum, trafikteki değişimin gerçek olduğuna dair ek bir ipucudur; nedeni kanıtlamaz ve sonucu değiştirmez."),gr); }
+function havaBirlikteKutu(s){ const h = s.hava_birlikte; if (!h) return null;
+  const rows = [["dusus","Trafik düşen günler"],["artis","Trafik artan günler"]].map(([k,ad])=>{ const o=h[k]; return el("tr",{},el("td",{},ad),el("td",{},String(o.toplam)),el("td",{},String(o.no2_ayni_yonde)),el("td",{},String(o.no2_normal)),el("td",{},String(o.no2_ters_yonde)),el("td",{},String(o.no2_verisi_yok)),el("td",{},String(o.pm10_de_ayni_yonde==null?"–":o.pm10_de_ayni_yonde))); });
+  const gunler = [].concat(h.dusus.gunler.map(g=>Object.assign({yon:"Düşüş"},g)), h.artis.gunler.map(g=>Object.assign({yon:"Artış"},g)));
+  const nd = {dusuk:"düşük",normal:"normal",yuksek:"yüksek"};
+  return el("div",{class:"box"},el("b",{},"Trafik ve hava birlikte (sayım; ek bilgi, sonucu değiştirmez)"),
+    el("table",{},el("thead",{},el("tr",{},...["","Gün sayısı","NO2 aynı yönde","NO2 normal","NO2 ters yönde","NO2 verisi yok","NO2 ve PM10 aynı yönde"].map(x=>el("th",{},x)))),el("tbody",{},rows)),
+    gunler.length?el("details",{},el("summary",{},"Gün listesi"),el("table",{},el("thead",{},el("tr",{},...["Gün","Trafik","Trafik oranı","NO2 oranı","NO2"].map(x=>el("th",{},x)))),
+      el("tbody",{},gunler.map(g=>el("tr",{},el("td",{},trGun(g.gun)),el("td",{},g.yon),el("td",{},g.trafik_orani==null?"–":yuzde(Number(g.trafik_orani).toFixed(2))),el("td",{},g.no2_orani==null?"–":yuzde(Number(g.no2_orani).toFixed(2))),el("td",{},g.no2_durum?nd[g.no2_durum]:"veri yok")))))):null,
+    el("div",{class:"note"},"Birlikte hareket nedeni kanıtlamaz; rüzgâr ve yağış da NO2'yi değiştirir. Hiçbir günün kararını değiştirmez."));
+}
+function bayramKutu(s){ const b = s.bayram_hava; if (!b) return null; const o = b.ozet, nd = {dusuk:"düşük",normal:"normal",yuksek:"yüksek"};
+  const f = x => x==null ? "–" : yuzde(Number(x).toFixed(2));
+  return el("div",{class:"box"},el("b",{},"Resmî tatil günlerinde trafik ve NO2 (sayım; ek bilgi, sonucu değiştirmez)"),
+    el("div",{class:"kv"},el("b",{},"Değerlendirilen tatil günü"),el("span",{},String(o.toplam)),el("b",{},"Trafiği düşük olan"),el("span",{},String(o.trafik_dusen)),
+      el("b",{},"Bunlardan NO2 de düşük"),el("span",{},String(o.no2_de_dusen)),el("b",{},"Tüm tatillerde ortanca oran"),el("span",{},"trafik "+f(o.medyan_trafik_orani)+", NO2 "+f(o.medyan_no2_orani))),
+    el("details",{},el("summary",{},"Gün listesi"),el("table",{},el("thead",{},el("tr",{},...["Gün","Tatil","Trafik oranı","NO2 oranı","NO2"].map(x=>el("th",{},x)))),
+      el("tbody",{},(b.gunler||[]).map(g=>el("tr",{},el("td",{},trGun(g.gun)),el("td",{},g.ad),el("td",{},f(g.trafik_orani)),el("td",{},f(g.no2_orani)),el("td",{},g.no2_durum?nd[g.no2_durum]:"veri yok")))))),
+    el("div",{class:"note"},"Birlikte hareket nedeni kanıtlamaz; rüzgâr ve yağış da NO2'yi değiştirir. Hiçbir günün kararını değiştirmez.")); }
+function iliskiKutu(s){ const r = s.hava_iliski; if (!r || !(r.noktalar||[]).length) return null;
+  const pts = r.noktalar, xs = pts.map(p=>p.trafik), ys = pts.map(p=>p.no2);
+  const xmin = Math.min(0.4,...xs)*0.95, xmax = Math.max(1.4,...xs)*1.02, ymin = Math.min(0.4,...ys)*0.95, ymax = Math.max(1.4,...ys)*1.02;
+  const x = scale(xmin,xmax,ML,GW-MR), y = scale(ymax,ymin,MT,GH-MB);
+  const svg = sv("svg",{viewBox:`0 0 ${GW} ${GH}`,width:"100%",role:"img","aria-label":"Trafik oranı ve NO2 oranı dağılımı"});
+  [0.5,0.85,1,1.15,1.3].filter(v=>v>=ymin&&v<=ymax).forEach(v=>svg.append(sv("line",{x1:ML,x2:GW-MR,y1:y(v),y2:y(v),stroke:v===1?"#c3cbd4":"#e3e7ec"}), sv("text",{x:ML-6,y:y(v)+4,"text-anchor":"end","font-size":11,fill:"#5b6775"},v.toFixed(2).replace(".",","))));
+  [0.5,0.85,1,1.15,1.3].filter(v=>v>=xmin&&v<=xmax).forEach(v=>svg.append(sv("line",{x1:x(v),x2:x(v),y1:MT,y2:GH-MB,stroke:v===1?"#c3cbd4":"#e3e7ec"}), sv("text",{x:x(v),y:GH-MB+14,"text-anchor":"middle","font-size":10,fill:"#5b6775"},v.toFixed(2).replace(".",","))));
+  const renk = {dusus:"#9b1c1c",artis:"#8a5a00",normal:"#1f4e79"};
+  const bzVar = pts.some(p=>p.benzer_hava===true);
+  pts.forEach(p=>svg.append(sv("circle",{cx:x(p.trafik),cy:y(p.no2),r:3,fill:renk[p.durum]||"#1f4e79","fill-opacity":(bzVar&&p.benzer_hava!==true)?.18:.6},sv("title",{},trGun(p.gun)+": trafik "+yuzde(p.trafik.toFixed(2))+", NO2 "+yuzde(p.no2.toFixed(2))))));
+  if (r.egim!=null){ const n=pts.length, mx=xs.reduce((a,b)=>a+b,0)/n, my=ys.reduce((a,b)=>a+b,0)/n, b0=my-r.egim*mx;
+    svg.append(sv("line",{x1:x(xmin),y1:y(r.egim*xmin+b0),x2:x(xmax),y2:y(r.egim*xmax+b0),stroke:"#c26a00","stroke-width":2,"stroke-dasharray":"6 3"})); }
+  svg.append(sv("text",{x:(ML+GW-MR)/2,y:GH-2,"text-anchor":"middle","font-size":11,fill:"#5b6775"},"Trafik oranı (normale göre)"));
+  svg.append(sv("text",{transform:`translate(12,${(MT+GH-MB)/2}) rotate(-90)`,"text-anchor":"middle","font-size":11,fill:"#5b6775"},"NO2 oranı (normale göre)"));
+  return el("div",{class:"box"},el("b",{},"Trafik ve NO2 ilişkisi (gün gün; ek bilgi, sonucu değiştirmez)"),svg,
+    el("div",{class:"row",style:"gap:16px"},el("span",{style:"color:#1f4e79;font-weight:600"},"● normal gün"),el("span",{style:"color:#9b1c1c;font-weight:600"},"● trafik düşük gün"),el("span",{style:"color:#8a5a00;font-weight:600"},"● trafik yüksek gün"),el("span",{style:"color:#c26a00;font-weight:600"},"╍ eğilim çizgisi")),
+    el("div",{class:"note"},"Her nokta bir gün. Noktalar yukarı doğru eğimliyse trafik azaldıkça NO2 de azalıyor demektir. "+(r.korelasyon!=null?"Gün gün bağıntı: "+yuzde(r.korelasyon.toFixed(2))+" ("+r.n+" gün). ":"")+"Günlük NO2 rüzgâr ve yağıştan da etkilendiği için tek tek günler dağınık olabilir; grup ortancaları daha anlamlıdır. Birlikte hareket nedeni kanıtlamaz."),
+    r.benzer_hava?el("div",{class:"note"},"Koyu noktalar: hava koşulları benzer günler ("+r.benzer_hava.n+" gün; "+r.benzer_hava.kriter+"). Soluk noktalar: yağış ya da rüzgâr bakımından kıyas günlerinden farklı günler."+(r.benzer_hava.korelasyon!=null?" Bu günlerde bağıntı: "+yuzde(r.benzer_hava.korelasyon.toFixed(2))+".":"")):null,
+    r.gruplar?el("table",{},el("thead",{},el("tr",{},...["Trafik","Gün sayısı","NO2 oranı (ortanca)","NO2 de düşük olan günler"].map(x=>el("th",{},x)))),
+      el("tbody",{},[["dusus","Normalin altında"],["normal","Normal"],["artis","Normalin üstünde"]].filter(([k])=>r.gruplar[k]&&r.gruplar[k].n).map(([k,ad])=>el("tr",{},el("td",{},ad),el("td",{},String(r.gruplar[k].n)),el("td",{},yuzde(r.gruplar[k].medyan_no2.toFixed(2))),el("td",{},"%"+Math.round(r.gruplar[k].no2_dusuk_pay*100)))))):null); }
+function saatlikKutu(s){ const r = s.saatlik_iliski; if (!r) return null; const f = x => x==null ? "–" : yuzde(Number(x).toFixed(2));
+  return el("div",{class:"box"},el("b",{},"Saatlik trafik ve NO2 bağıntısı (ek bilgi; sonucu değiştirmez)"),
+    el("table",{},el("thead",{},el("tr",{},...["NO2, trafikten kaç saat sonra","Saat sayısı","Bağıntı (Spearman)"].map(x=>el("th",{},x)))),
+      el("tbody",{},(r.lagler||[]).map(l=>el("tr",{style:l.gecikme===r.en_iyi_gecikme?"font-weight:600":""},el("td",{},l.gecikme===0?"Aynı saat":l.gecikme+" saat sonra"),el("td",{},String(l.n)),el("td",{},f(l.korelasyon)+(l.gecikme===r.en_iyi_gecikme?"  (en yüksek)":"")))))),
+    el("div",{class:"note"},"Bağıntı 1'e yakınsa trafik ve NO2 birlikte hareket ediyor demektir. NO2'nin trafiğe birkaç saat gecikmeyle tepki vermesi beklenir. Birlikte hareket nedeni kanıtlamaz.")); }
+function profilKutu(s){ const r = s.gun_profili; if (!r) return null;
+  const vals = [].concat(r.tatil.trafik,r.tatil.no2,r.diger.trafik,r.diger.no2).filter(v=>v!=null); if (!vals.length) return null;
+  const ymax = Math.max(1.3,...vals)*1.05, ymin = Math.min(0.3,...vals)*0.95, x = scale(0,23,ML,GW-MR), y = scale(ymax,ymin,MT,GH-MB);
+  const svg = sv("svg",{viewBox:`0 0 ${GW} ${GH}`,width:"100%",role:"img","aria-label":"Gün içi trafik ve NO2 profili"});
+  [ymin,0.5,0.85,1,1.15,ymax].forEach(v=>svg.append(sv("line",{x1:ML,x2:GW-MR,y1:y(v),y2:y(v),stroke:v===1?"#c3cbd4":"#e3e7ec"}), sv("text",{x:ML-6,y:y(v)+4,"text-anchor":"end","font-size":11,fill:"#5b6775"},v.toFixed(2).replace(".",","))));
+  for (let h=0; h<24; h+=3) svg.append(sv("text",{x:x(h),y:GH-MB+14,"text-anchor":"middle","font-size":10,fill:"#5b6775"},String(h).padStart(2,"0")+":00"));
+  const yol = (arr,c,d) => { let t="",pen=false; arr.forEach((v,i)=>{ if(v==null){pen=false;return;} t+=(pen?"L":"M")+x(i).toFixed(1)+","+y(v).toFixed(1); pen=true; }); return sv("path",{d:t,fill:"none",stroke:c,"stroke-width":2,"stroke-dasharray":d||""}); };
+  const C1="#1f4e79", C2="#c26a00";
+  svg.append(yol(r.diger.trafik,C1,"2 3"), yol(r.diger.no2,C2,"2 3"), yol(r.tatil.trafik,C1), yol(r.tatil.no2,C2));
+  return el("div",{class:"box"},el("b",{},"Gün içi profil: resmî tatil günleri ve diğer günler (ek bilgi; sonucu değiştirmez)"),svg,
+    el("div",{class:"row",style:"gap:16px"},el("span",{style:"color:"+C1+";font-weight:600"},"━ Trafik, tatil ("+r.tatil.gun_sayisi+" gün)"),el("span",{style:"color:"+C2+";font-weight:600"},"━ NO2, tatil"),el("span",{style:"color:"+C1},"··· Trafik, diğer günler ("+r.diger.gun_sayisi+" gün)"),el("span",{style:"color:"+C2},"··· NO2, diğer günler")),
+    el("div",{class:"note"},"Her nokta, o saatin önceki 4 haftanın aynı gün ve saatine oranının ortalamasıdır (1,0 = normal). Düz çizgiler tatil günlerini, noktalı çizgiler diğer günleri gösterir. Nedeni kanıtlamaz.")); }
+function tespitKutu(s){ const r = s.tespit; if (!r) return null; const pay = (a,b) => b ? "%"+Math.round(100*a/b) : "–";
+  const sat = (ad,o) => el("tr",{},el("td",{},ad),el("td",{},String(o.toplam)),el("td",{},String(o.dusus)),el("td",{},String(o.normal)),el("td",{},String(o.artis)),el("td",{},pay(o.dusus+o.artis,o.toplam)));
+  return el("div",{class:"box"},el("b",{},"Sistem bilinen olayları ne kadar yakalıyor? (sayım)"),
+    el("table",{},el("thead",{},el("tr",{},...["Günler","Gün sayısı","Düşüş","Normal","Artış","Olağandışı bulunan"].map(x=>el("th",{},x)))),el("tbody",{},sat("Resmî tatil günleri",r.tatil),sat("Diğer günler",r.diger))),
+    el("div",{class:"note"},"Tatil günlerinde beklenen sonuç düşüştür. Diğer günlerdeki olağandışı günler yanlış alarm olmak zorunda değildir: okul tatili, idari izin, hava olayı ya da veri sorunu olabilir.")); }
+/* markdown-indir */
+function mdKacis(x){ return String(x==null?"":x).replace(/\|/g,"\\|").replace(/\n+/g," "); }
+function mdTablo(basliklar, satirlar){ return "| "+basliklar.join(" | ")+" |\n|"+basliklar.map(()=>"---").join("|")+"|\n"+satirlar.map(r=>"| "+r.map(mdKacis).join(" | ")+" |").join("\n")+"\n"; }
+function mdIndir(md){
+  const d = new Date(), p = n => String(n).padStart(2,"0");
+  const ad = "timerca-rapor-"+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())+".md";
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([md],{type:"text/markdown;charset=utf-8"})); a.download = ad;
+  document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+function mdDugme(fn){ return el("p",{},el("button",{class:"sec",onclick:()=>mdIndir(fn())},"Markdown olarak indir")); }
+/* ek-saf */
+const DURUM_TR = {dusus:"düşüş",artis:"artış",normal:"normal",eksik_veri:"eksik veri",eksik_veri_ve_sapma:"eksik veri ve sapma",veri_yok:"veri yok",degerlendirilemedi:"değerlendirilemedi"};
+function csvKacis(x){ const t = String(x==null?"":x).replace(/\r?\n/g," "); return /[";]/.test(t) ? '"'+t.replace(/"/g,'""')+'"' : t; }
+function sayiTr(x, n){ return x==null ? "" : (typeof x==="number" && n!=null ? x.toFixed(n) : String(x)).replace(".",","); }
+function csvMetin(basliklar, satirlar){ return "\ufeff"+[basliklar].concat(satirlar).map(r=>r.map(csvKacis).join(";")).join("\r\n")+"\r\n"; }
+function ornekCikar(m){ const out=[], rx=/'((?:[^']|'(?=\p{L}))+)'(?!\p{L})/gu; let x; const t0=String(m||'');
+  while ((x=rx.exec(t0))) { const t=x[1].trim(); if (t.length>=12 && /\s/.test(t) && !out.includes(t)) out.push(t); }
+  return out.slice(0,3); }
+function csvVeri(s, hipAdFn, trGunFn){
+  s = s||{}; const hA = hipAdFn||(x=>x), tG = trGunFn||(x=>x), dt = d => DURUM_TR[d]||d||"";
+  if ((s.karsilastirma||[]).length) return {ad:"gun-karsilastirma", basliklar:["Gün","Normale göre oran","Durum","Destekleyen neden","Takvim"],
+    satirlar:s.karsilastirma.map(k=>[tG(k.gun), sayiTr(k.oran,2), dt(k.durum), k.bekliyor?"kanıt yetersiz, insan onayı gerekir":((k.destekleyen||[]).map(hA).join(", ")||"yok"), (k.takvim||[]).join(", ")])};
+  if (s.saatlik_iliski) return {ad:"saatlik-baginti", basliklar:["Gecikme (saat)","Saat sayısı","Bağıntı"], satirlar:(s.saatlik_iliski.lagler||[]).map(l=>[l.gecikme,l.n,sayiTr(l.korelasyon,2)])};
+  if (s.gun_profili) return {ad:"gun-ici-profil", basliklar:["Saat","Trafik (tatil)","NO2 (tatil)","Trafik (diğer)","NO2 (diğer)"],
+    satirlar:Array.from({length:24},(_,h)=>[String(h).padStart(2,"0")+":00",sayiTr(s.gun_profili.tatil.trafik[h],2),sayiTr(s.gun_profili.tatil.no2[h],2),sayiTr(s.gun_profili.diger.trafik[h],2),sayiTr(s.gun_profili.diger.no2[h],2)])};
+  if (s.tespit) return {ad:"tespit-ozeti", basliklar:["Günler","Gün sayısı","Düşüş","Normal","Artış"], satirlar:[["Resmî tatil",s.tespit.tatil.toplam,s.tespit.tatil.dusus,s.tespit.tatil.normal,s.tespit.tatil.artis],["Diğer",s.tespit.diger.toplam,s.tespit.diger.dusus,s.tespit.diger.normal,s.tespit.diger.artis]]};
+  if (s.bayram_hava){
+    const nd = {dusuk:"düşük",normal:"normal",yuksek:"yüksek"};
+    return {ad:"bayram-trafik-ve-hava", basliklar:["Gün","Tatil","Trafik oranı","NO2 oranı","NO2"],
+      satirlar:(s.bayram_hava.gunler||[]).map(g=>[tG(g.gun), g.ad, sayiTr(g.trafik_orani,2), sayiTr(g.no2_orani,2), g.no2_durum?nd[g.no2_durum]:"veri yok"])};
+  }
+  if (s.hava_iliski && (s.hava_iliski.noktalar||[]).length) return {ad:"trafik-no2-iliskisi", basliklar:["Gün","Trafik oranı","NO2 oranı"],
+    satirlar:s.hava_iliski.noktalar.map(p=>[tG(p.gun), sayiTr(p.trafik,2), sayiTr(p.no2,2)])};
+  if (s.hava_birlikte){
+    const hb = s.hava_birlikte, nd = {dusuk:"düşük",normal:"normal",yuksek:"yüksek"};
+    const rows = [].concat(hb.dusus.gunler.map(g=>["Düşüş"].concat([g])), hb.artis.gunler.map(g=>["Artış"].concat([g]))).map(([y,g])=>[tG(g.gun), y, sayiTr(g.trafik_orani,2), sayiTr(g.no2_orani,2), g.no2_durum?nd[g.no2_durum]:"veri yok"]);
+    return {ad:"trafik-ve-hava", basliklar:["Gün","Trafik","Trafik oranı","NO2 oranı","NO2"], satirlar:rows};
+  }
+  if (s.gun_siralama) return {ad:"gun-siralama", basliklar:["Sıra","Gün","Normale göre oran","Durum","Eksik saat","Toplam saat"],
+    satirlar:(s.gun_siralama.gunler||[]).map((g,i)=>[i+1,tG(g.gun),sayiTr(g.oran,2),dt(g.durum),g.eksik_saat,g.toplam_saat])};
+  if (s.eksik_veri_gunleri) return {ad:"eksik-veri-gunleri", basliklar:["Gün","Durum","Eksik saat","Toplam saat"],
+    satirlar:(s.eksik_veri_gunleri.gunler||[]).map(g=>[tG(g.gun),dt(g.durum),g.eksik_saat,g.toplam_saat])};
+  const grupCsv = (ad, gruplar) => { const rows=[]; gruplar.forEach(([a,d])=>((d||{}).gunler||[]).forEach(g=>rows.push([a,tG(g.gun),dt(g.durum),sayiTr(g.oran,2)])));
+    return {ad:ad, basliklar:["Grup","Gün","Durum","Normale göre oran"], satirlar:rows}; };
+  if (s.hafta_ici_sonu) return grupCsv("hafta-ici-hafta-sonu", [["Hafta içi",s.hafta_ici_sonu.hafta_ici],["Hafta sonu",s.hafta_ici_sonu.hafta_sonu]]);
+  if (s.bayram_cevresi) return grupCsv("bayram-oncesi-sonrasi", [["Bayram öncesi",s.bayram_cevresi.oncesi],["Bayram",s.bayram_cevresi.bayram],["Bayram sonrası",s.bayram_cevresi.sonrasi]]);
+  if (s.normal_hafta) return {ad:"normal-hafta", basliklar:["Gün","Durum","Normale göre oran"],
+    satirlar:((s.normal_hafta.donem||{}).gunler||[]).filter(g=>g.yuklu).map(g=>[tG(g.gun),dt(g.durum),sayiTr(g.oran,2)])};
+  if ((s.tatil_haftalari||[]).length){
+    const rows = [];
+    s.tatil_haftalari.forEach(w=>{ const base=[w.hafta+". hafta", tG(w.baslangic), tG(w.bitis), w.etkilendi?"evet":"hayır"];
+      if ((w.tatil_gunleri||[]).length) w.tatil_gunleri.forEach(g=>rows.push(base.concat([tG(g.gun), g.ad, dt(g.durum), sayiTr(g.oran,2)]))); else rows.push(base.concat(["","","",""])); });
+    return {ad:"tatil-haftalari", basliklar:["Hafta","Başlangıç","Bitiş","Tatilden etkilendi","Tatil günü","Tatil","Durum","Normale göre oran"], satirlar:rows};
+  }
+  if ((s.bayram_karsilastirma||[]).length){
+    const rows = [];
+    s.bayram_karsilastirma.forEach(d=>(d.gunler||[]).forEach(g=>rows.push([d.ad+" "+d.yil, tG(d.baslangic), tG(d.bitis), tG(g.gun), dt(g.durum), sayiTr(g.oran,2), sayiTr(g.no2_orani,2)])));
+    return {ad:"bayram-karsilastirma", basliklar:["Bayram","Dönem başlangıcı","Dönem bitişi","Gün","Durum","Normale göre oran","NO2 oranı (ek bilgi)"], satirlar:rows};
+  }
+  if ((s.haftalar||[]).length){
+    const rows = [];
+    s.haftalar.forEach(w=>{ const base=[w.hafta+". hafta", tG(w.baslangic), tG(w.bitis), w.yuklu_gun, w.degerlendirilebilen];
+      if ((w.adaylar||[]).length) w.adaylar.forEach(x=>rows.push(base.concat([tG(x.gun), dt(x.durum), sayiTr(x.oran,2)]))); else rows.push(base.concat(["","",""])); });
+    return {ad:"haftalik-ozet", basliklar:["Hafta","Başlangıç","Bitiş","Yüklü gün","Değerlendirilebilen gün","Olağandışı gün","Durum","Normale göre oran"], satirlar:rows};
+  }
+  if ((s.ay_karsilastirma||[]).length) return {ad:"ay-karsilastirma", basliklar:["Ay","Taranan gün","Değerlendirilebilen","Sapma günü","Düşüş","Artış","En çok sapan gün","En çok sapan gün oranı","NO2 oranı"],
+    satirlar:s.ay_karsilastirma.map(k=>[k.ay,k.taranan,k.degerlendirilebilen,k.sapma,k.dusus,k.artis,k.en_sapan?tG(k.en_sapan.gun):"",k.en_sapan?sayiTr(k.en_sapan.oran,2):"",sayiTr(k.no2_orani,2)])};
+  const tr = s.tarama || (Array.isArray(s.adaylar) ? s : null);
+  if (tr && (tr.adaylar||[]).length) return {ad:"aday-gunler", basliklar:["Gün","Durum","Normale göre oran","Eksik saat","Toplam saat"],
+    satirlar:tr.adaylar.map(a=>[tG(a.gun), dt(a.durum), sayiTr(a.medyan_oran!=null?a.medyan_oran:a.oran,2), a.eksik_saat, a.toplam_saat])};
+  return null;
+}
+function oneriFold(t){ return String(t||"").replace(/İ/g,"i").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/\s+/g," ").trim(); }
+function oneriSuz(liste, q, en){
+  const f = oneriFold(q), kel = f.split(" ").filter(Boolean), gor = new Set(), out = [];
+  for (const t of (liste||[])) { if (typeof t!=="string" || gor.has(t)) continue; gor.add(t);
+    if (!kel.length || kel.every(k=>oneriFold(t).includes(k))) out.push(t); if (out.length>=(en||6)) break; }
+  return out;
+}
+function ustUsteNokta(pts, gun){
+  const a = Array.from({length:24},()=>({deger:null,baseline:null}));
+  (pts||[]).forEach(p=>{ if (p && p.ts && p.ts.slice(0,10)===gun){ const h=+p.ts.slice(11,13); if (h>=0 && h<24) a[h]={deger:p.deger==null?null:p.deger, baseline:p.baseline==null?null:p.baseline}; } });
+  return a;
+}
+/* /ek-saf */
+function csvIndir(v){
+  const d = new Date(), p = n => String(n).padStart(2,"0");
+  const ad = "timerca-"+v.ad+"-"+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())+".csv";
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csvMetin(v.basliklar, v.satirlar)],{type:"text/csv;charset=utf-8"})); a.download = ad;
+  document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+function csvDugme(s){ const v = csvVeri(s, hipAd, trGun); if (!v) return null;
+  return el("p",{},el("button",{class:"sec",title:"Excel'de Türkçe ayarlarla açılır (ayraç ;)",onclick:()=>csvIndir(v)},"CSV olarak indir")); }
+function ustUsteCiz(kutu, g1, g2, n1, n2){
+  const a = ustUsteNokta(n1,g1), b = ustUsteNokta(n2,g2), vals = a.concat(b).flatMap(p=>[p.deger,p.baseline]).filter(v=>v!=null);
+  if (!vals.length){ fill(kutu, el("p",{class:"note"},"Bu günler için saatlik veri yok.")); return; }
+  const ymax = Math.max(...vals,1)*1.05, x = scale(0,23,ML,GW-MR), y = scale(ymax,0,MT,GH-MB);
+  const svg = sv("svg",{viewBox:`0 0 ${GW} ${GH}`,width:"100%",role:"img","aria-label":"İki günün saatlik trafik eğrileri"});
+  [0,.25,.5,.75,1].map(f=>f*ymax).forEach(v=>svg.append(sv("line",{x1:ML,x2:GW-MR,y1:y(v),y2:y(v),stroke:"#e3e7ec"}), sv("text",{x:ML-6,y:y(v)+4,"text-anchor":"end","font-size":11,fill:"#5b6775"},Math.round(v).toLocaleString("tr-TR"))));
+  for (let h=0; h<24; h+=3) svg.append(sv("text",{x:x(h),y:GH-MB+14,"text-anchor":"middle","font-size":10,fill:"#5b6775"},String(h).padStart(2,"0")+":00"));
+  const yol = (arr,key,c,w,d) => { let t="",pen=false; arr.forEach((p,i)=>{ const v=p[key]; if(v==null){pen=false;return;} t+=(pen?"L":"M")+x(i).toFixed(1)+","+y(v).toFixed(1); pen=true; });
+    return sv("path",{d:t,fill:"none",stroke:c,"stroke-width":w,"stroke-dasharray":d||"","stroke-opacity":d?.55:1}); };
+  const C1="#1f4e79", C2="#c26a00";
+  svg.append(yol(a,"baseline",C1,1.2,"4 3"), yol(b,"baseline",C2,1.2,"4 3"), yol(a,"deger",C1,2), yol(b,"deger",C2,2));
+  const detay = el("div",{class:"note"},"Bir saatin üzerine gelin.");
+  svg.append(sv("rect",{x:ML,y:MT,width:GW-ML-MR,height:GH-MB-MT,fill:"transparent",onmousemove:ev=>{ const bb=svg.getBoundingClientRect(), px=(ev.clientX-bb.left)/bb.width*GW, h=Math.max(0,Math.min(23,Math.round((px-ML)/(GW-ML-MR)*23)));
+    const f = v => v==null?"yok":Math.round(v).toLocaleString("tr-TR");
+    detay.textContent = String(h).padStart(2,"0")+":00   "+trGun(g1)+": "+f(a[h].deger)+" (beklenen "+f(a[h].baseline)+")   "+trGun(g2)+": "+f(b[h].deger)+" (beklenen "+f(b[h].baseline)+")"; }}));
+  fill(kutu, svg,
+    el("div",{class:"row",style:"gap:16px"},el("span",{style:"color:"+C1+";font-weight:600"},"━ "+trGun(g1)),el("span",{style:"color:"+C2+";font-weight:600"},"━ "+trGun(g2)),el("span",{class:"note"},"Kesikli çizgi: o günün beklenen düzeyi (önceki 4 haftanın aynı günleri)")),
+    detay, el("p",{class:"note"},"Mutlak araç sayılarıdır; iki gün farklı haftanın günü olabilir. Karar, günün kendi beklenen düzeyine oranıyla verilir; bu grafik yalnızca görsel karşılaştırmadır."));
+}
+function ustUsteDugme(s){ const k = s.karsilastirma||[]; if (k.length!==2) return null;
+  const kutu = el("div",{}), btn = el("button",{class:"sec"},"Saatlik eğrileri üst üste göster");
+  btn.onclick = async () => { busy(btn,true); fill(kutu, el("p",{class:"note"},"Seriler hazırlanıyor…"));
+    try{ const g1=k[0].gun, g2=k[1].gun;
+      const [r1,r2] = await Promise.all([api("/series",{mod:"saatlik",start:g1+" 00:00",end:g1+" 23:00"}), api("/series",{mod:"saatlik",start:g2+" 00:00",end:g2+" 23:00"})]);
+      ustUsteCiz(kutu, g1, g2, r1.noktalar, r2.noktalar);
+    }catch(e){ fail(kutu,e); } finally{ busy(btn,false); } };
+  return el("div",{},el("p",{},btn), kutu); }
+function normalGunKutu(s){ const n = s.normal_gun; if (!n) return null;
+  const base = (n.baseline_gunleri||[]).map(trGun).join(", ")||"–", bt = (n.baseline_takvim||[]).map(x=>trGun(x.gun)+": "+x.notlar.join(", ")).join("; ");
+  return el("div",{class:"box"},el("b",{},"Normal gün ayrıntısı (sonucu değiştirmez)"),
+    el("div",{class:"kv"},el("b",{},"Normale göre oran"),el("span",{},n.oran==null?"hesaplanamadı":yuzde(n.oran.toFixed(2))),
+      el("b",{},"Eşik aralığı"),el("span",{},yuzde(n.esik_alt)+" – "+yuzde(n.esik_ust)+" (dışı olağandışı sayılır)"),
+      el("b",{},"Eksik saat"),el("span",{},n.eksik_saat+" / "+n.toplam_saat),
+      el("b",{},"Normal düzey günleri"),el("span",{},base),
+      bt?el("b",{},"Normal düzey günlerinde takvim notu"):null, bt?el("span",{},bt+" (normal düzey bozulmuş olabilir)"):null)); }
+function askMd(r, soru){
+  const s = r.sonuc||{}, h = s.hipotezler||{};
+  let md = "# TimeRCA-AI raporu\n\n";
+  if (soru) md += "**Soru:** "+soru+"\n\n";
+  md += "**Oluşturulma:** "+new Date().toLocaleString("tr-TR")+"\n\n## Özet\n\n"+trMetin(s.ozet||"")+"\n\n";
+  md += "**İncelenen aralık:** "+trMetin(s.pencere||"–")+"  \n**İnsan gerekti:** "+(s.insan_gerekli?"evet":"hayır")+"  \n**Nihai durum:** "+((NIHAI[s.nihai_durum]||[s.nihai_durum])[0]||"–")+"\n\n";
+  if (Object.keys(h).length) md += "## Olası nedenler\n\n"+mdTablo(["Olası neden","Durum"],Object.entries(h).map(([k,v])=>[hipAd(k),(DESTEK[v]||[v])[0]]))+"\n";
+  if ((s.karsilastirma||[]).length) md += "## Gün karşılaştırması\n\n"+mdTablo(["Gün","Normale göre oran","Destekleyen neden","Takvim"],s.karsilastirma.map(k=>[trGun(k.gun),k.oran==null?"hesaplanamadı":k.oran.toFixed(2),k.bekliyor?"kanıt yetersiz, insan onayı gerekir":((k.destekleyen||[]).map(hipAd).join(", ")||"yok"),(k.takvim||[]).join(", ")||"–"]))+"\n";
+  if (s.bayram_hava) md += "## Resmî tatil günlerinde trafik ve NO2 (sayım; ek bilgi, sonucu değiştirmez)\n\n"+mdTablo(["Gün","Tatil","Trafik oranı","NO2 oranı"],(s.bayram_hava.gunler||[]).map(g=>[trGun(g.gun),g.ad,g.trafik_orani==null?"–":g.trafik_orani.toFixed(2),g.no2_orani==null?"yok":g.no2_orani.toFixed(2)]))+"\n";
+  if (s.hava_iliski) md += "## Trafik ve NO2 ilişkisi (ek bilgi, sonucu değiştirmez)\n\n"+s.hava_iliski.n+" gün; bağıntı "+(s.hava_iliski.korelasyon==null?"hesaplanmadı":s.hava_iliski.korelasyon.toFixed(2))+", eğim "+(s.hava_iliski.egim==null?"hesaplanmadı":s.hava_iliski.egim.toFixed(2))+". Birlikte hareket nedeni kanıtlamaz.\n\n";
+  if (s.hava_birlikte) md += "## Trafik ve hava birlikte (sayım; ek bilgi, sonucu değiştirmez)\n\n"+mdTablo(["","Gün sayısı","NO2 aynı yönde","NO2 normal","NO2 ters yönde","NO2 verisi yok"],[["dusus","Trafik düşen günler"],["artis","Trafik artan günler"]].map(([k,ad])=>{ const o=s.hava_birlikte[k]; return [ad,o.toplam,o.no2_ayni_yonde,o.no2_normal,o.no2_ters_yonde,o.no2_verisi_yok]; }))+"\n";
+  if ((s.haftalar||[]).length) md += "## Haftalık özet\n\n"+mdTablo(["Hafta","Günler","Değerlendirilebilen gün","Olağandışı günler"],s.haftalar.map(w=>[w.hafta+". hafta",trGun(w.baslangic)+" – "+trGun(w.bitis),w.yuklu_gun?(w.degerlendirilebilen+"/"+w.yuklu_gun):"yüklü gün yok",(w.adaylar||[]).map(x=>trGun(x.gun)+" "+x.durum+(x.oran!=null?" ("+x.oran.toFixed(2)+")":"")).join("; ")||"aday yok"]))+"\n";
+  if ((s.tatil_haftalari||[]).length) md += "## Tatilden etkilenen haftalar\n\n"+mdTablo(["Hafta","Günler","Tatilden etkilendi","Tatil günleri"],s.tatil_haftalari.map(w=>[w.hafta+". hafta",trGun(w.baslangic)+" – "+trGun(w.bitis),w.etkilendi?"evet":"hayır",(w.tatil_gunleri||[]).map(g=>trGun(g.gun)+" "+g.ad+(g.oran!=null?" ("+g.oran.toFixed(2)+")":"")).join("; ")||"resmî tatil yok"]))+"\n";
+  if ((s.bayram_karsilastirma||[]).length) md += "## Bayram karşılaştırması\n\n"+mdTablo(["Bayram","Tarih aralığı","Gün sayısı","Değerlendirilen gün","Ortanca oran","Düşüş günü","NO2 ortanca oran (ek bilgi)"],s.bayram_karsilastirma.map(d=>[d.ad+" "+d.yil,trGun(d.baslangic)+" – "+trGun(d.bitis),d.gun_sayisi,d.degerlendirilen+"/"+d.gun_sayisi,d.medyan_oran==null?"–":d.medyan_oran.toFixed(2),d.dusus_gun,d.no2_medyan==null?"–":d.no2_medyan.toFixed(2)]))+"\n";
+  const mdGrup = (bas, gr) => "## "+bas+"\n\n"+mdTablo(["Grup","Gün sayısı","Değerlendirilen gün","Ortanca oran","Düşüş günü","Günler ve normale göre oran"],gr.map(([a,d])=>[a,d.gun_sayisi,d.degerlendirilen+"/"+d.gun_sayisi,d.medyan_oran==null?"–":d.medyan_oran.toFixed(2),d.dusus_gun,(d.gunler||[]).filter(g=>g.yuklu!==false).map(g=>trGun(g.gun)+(g.oran!=null?" ("+g.oran.toFixed(2)+")":"")).join("; ")]))+"\n";
+  if (s.hafta_ici_sonu) md += mdGrup("Hafta içi ve hafta sonu", [["Hafta içi",s.hafta_ici_sonu.hafta_ici],["Hafta sonu",s.hafta_ici_sonu.hafta_sonu]]);
+  if (s.bayram_cevresi) md += mdGrup("Bayram öncesi ve sonrası", [["Bayram öncesi",s.bayram_cevresi.oncesi],["Bayram",s.bayram_cevresi.bayram],["Bayram sonrası",s.bayram_cevresi.sonrasi]]);
+  if (s.normal_hafta) md += mdGrup("Hafta normal açıklaması", [["Seçilen hafta",s.normal_hafta.donem]]);
+  if (s.gun_siralama) md += "## Gün sıralaması\n\n"+mdTablo(["Sıra","Gün","Normale göre oran","Durum"],(s.gun_siralama.gunler||[]).map((g,i)=>[i+1,trGun(g.gun),g.oran==null?"–":g.oran.toFixed(2),DURUM_TR[g.durum]||g.durum||""]))+"\n";
+  if (s.eksik_veri_gunleri) md += "## Eksik veri günleri\n\n"+((s.eksik_veri_gunleri.gunler||[]).length?mdTablo(["Gün","Durum","Eksik saat"],s.eksik_veri_gunleri.gunler.map(g=>[trGun(g.gun),DURUM_TR[g.durum]||g.durum||"",g.durum==="veri_yok"?"tümü":g.eksik_saat+"/"+g.toplam_saat])):"Eşiği aşan gün yok.\n")+"\n";
+  if ((s.ay_karsilastirma||[]).length) md += "## Ay karşılaştırması\n\n"+mdTablo(["Ay","Taranan gün","Değerlendirilebilen","Sapma günü","Düşüş","Artış","En çok sapan gün"],s.ay_karsilastirma.map(k=>[k.ay,k.taranan,k.degerlendirilebilen,k.sapma,k.dusus,k.artis,k.en_sapan?(trGun(k.en_sapan.gun)+" ("+k.en_sapan.oran.toFixed(2)+")"):"yok"]))+"\n";
+  if (s.normal_gun) md += "## Normal gün ayrıntısı\n\n"+mdTablo(["Alan","Değer"],[["Normale göre oran",s.normal_gun.oran==null?"hesaplanamadı":s.normal_gun.oran.toFixed(2)],["Eşik aralığı",s.normal_gun.esik_alt+" – "+s.normal_gun.esik_ust],["Eksik saat",s.normal_gun.eksik_saat+" / "+s.normal_gun.toplam_saat],["Normal düzey günleri",(s.normal_gun.baseline_gunleri||[]).map(trGun).join(", ")||"–"]])+"\n";
+  if (s.ek_sinyal) md += "## Ek sinyal: hava kalitesi çapraz kontrolü (ek bilgi; sonucu değiştirmez)\n\n"+s.ek_sinyal.metin+"\n\nNormale göre oran: trafik "+s.ek_sinyal.trafik_orani+", NO2 "+s.ek_sinyal.no2_orani+", PM10 "+s.ek_sinyal.pm10_orani+". Kaynak: "+s.ek_sinyal.kaynak+".\n\n";
+  if ((s.takvim_notu||[]).length) md += "## Takvim notu (ek bilgi; sonucu değiştirmez)\n\n"+s.takvim_notu.map(x=>"- "+trGun(x.gun)+": "+x.notlar.join(", ")).join("\n")+"\n\n";
+  if (s.aciklama && s.aciklama.text) md += "## Açıklama ("+(s.aciklama.source==="llm"?"LLM, doğrulandı":"kural metni")+")\n\n"+trMetin(s.aciklama.text)+"\n\n";
+  md += "## Sınırlar\n\n- Karar kuralları sabittir; yapay zekâ yalnız soruyu anlamada ve açıklama yazmada kullanılır.\n- Gün düzeyinde kısa süreli düşüşler görünmeyebilir. Olağandışı sayılmayan gün 'sorunsuz' demek değil, 'eşiği aşmadı' demektir.\n- Hava, tatil ve deprem bulguları zamansal çakışmadır; nedensellik kanıtı değildir.\n";
+  if ((r.plan||[]).length) md += "\n*Yapılan işlemler:* "+r.plan.map(a=>ADIM[a]||a).join(" → ")+"\n";
+  return md;
+}
+function raporMd(r){
+  let md = "# TimeRCA-AI pencere raporu\n\n**Oluşturulma:** "+new Date().toLocaleString("tr-TR")+"\n\n## Özet\n\n"+trMetin(r.summary_tr||"")+"\n\n";
+  md += "**İncelenen aralık:** "+trMetin(r.window||"–")+"  \n**Normale göre oran:** "+(r.median_ratio==null?"hesaplanamadı":r.median_ratio)+"  \n**Güven:** "+(GUVEN[r.confidence]||r.confidence||"–")+"  \n**İnsan gerekti:** "+(r.needs_human?"evet":"hayır")+"  \n**Nihai durum:** "+((NIHAI[r.nihai_durum]||[r.nihai_durum])[0]||"–")+"\n\n";
+  md += "## Tüm olası nedenler\n\n"+mdTablo(["Olası neden","Durum","Kanıt"],(r.hypotheses||[]).map(x=>[HIP[x.name]||x.name,(DESTEK[x.status]||[x.status])[0],trMetin(x.detail||"")]))+"\n";
+  if ((r.caveats||[]).length) md += "## Sınırlar\n\n"+r.caveats.map(x=>"- "+x).join("\n")+"\n";
+  return md;
+}
+
+/* soru gecmisi (yalniz tarayici, son 5 soru) */
+const GECMIS_ANAHTAR = "timerca_soru_gecmisi";
+function gecmisOku(){ try{ const v = JSON.parse(localStorage.getItem(GECMIS_ANAHTAR)||"[]"); return Array.isArray(v)?v.filter(x=>typeof x==="string").slice(0,5):[]; }catch(e){ return []; } }
+function gecmisEkle(q){
+  q = (q||"").trim(); if (!q) return;
+  const l = [q].concat(gecmisOku().filter(x=>x!==q)).slice(0,5);
+  try{ localStorage.setItem(GECMIS_ANAHTAR, JSON.stringify(l)); }catch(e){}
+  gecmisCiz();
+}
+function gecmisCiz(){
+  const kutu = document.getElementById("soru-gecmis"); if (!kutu) return;
+  const l = gecmisOku();
+  fill(kutu, l.length ? el("span",{class:"note"},"Son sorular:") : null,
+    l.map(t=>el("button",{class:"sec",title:"Tekrar sor",onclick:()=>{ $("q").value=t; $("btn-soru").click(); }},t)));
+}
+
+function askGoster(out, r){
+  const soru = $("q").value;
+  const s = r.sonuc||{}, kids = [];
+  const adimlar = (r.plan||[]).map(a=>ADIM[a]||a).join(" → ");
+  if (s.tip==="bilgi"){
+    if (s.durum==="off_topic"){
+      kids.push(el("div",{class:"box warn"},el("b",{},"Bu soru sistemin konusu dışında."),el("p",{class:"note"},"Bu panel İstanbul saatlik trafik anormalliklerini ve nedenlerini inceler. Örnek: \"22.04.2023 neden düştü\" veya \"USGS kataloğu hangi büyüklükten itibaren tam?\".")));
+    } else if (s.durum==="out_of_scope"){
+      kids.push(el("div",{class:"box warn"},el("b",{},"Bu soru kapsam dışında."),el("p",{},(s.nedenler||[]).join("; ")||"Sistem yalnızca İstanbul ve yüklü dönemleri kapsar."),el("p",{class:"note"},"Sistem kapsamı bilmediği konuda cevap uydurmaz.")));
+    } else if (s.durum==="ok" && (s.notlar||[]).length){
+      kids.push(el("div",{class:"box"},el("b",{},"Bilgi tabanından bulunan kaynaklı notlar"),el("p",{class:"note"},"Sistem bu notları serbestçe yeniden yazmaz, olduğu gibi gösterir. \"Doğrudan cevap olmayabilir\" etiketi bilinçlidir: bir notun soruyu tam cevaplayıp cevaplamadığını sistem kesin ayıramaz."),el("ul",{},s.notlar.map(notKarti))));
+    } else {
+      kids.push(el("div",{class:"box warn"},el("b",{},"Bilgi tabanında bu soruya uygun not bulunamadı."),el("p",{class:"note"},"Durum: "+(s.durum||"bilinmiyor"))));
+    }
+  } else if (s.tip==="analiz"){
+    kids.push(el("div",{class:"box"+(s.insan_gerekli?" warn":"")},el("b",{},trMetin(s.ozet)||"Analiz tamamlandı.")));
+    if (s.aciklama && s.aciklama.text) kids.push(el("div",{class:"box"},el("b",{},s.aciklama.source==="llm"?"Açıklama (LLM"+(s.aciklama.model?", "+s.aciklama.model:"")+"; sayı, tarih ve hipotezler doğrulandı, karar kuraldadır)":"Açıklama (kural metni; LLM çıktısı doğrulamayı geçmedi ya da kullanılamadı"+(s.aciklama.reason?": "+s.aciklama.reason:"")+")"),el("p",{},trMetin(s.aciklama.text))));
+    const tkb = takvimKutu(s); if (tkb) kids.push(tkb);
+    const snk = sinyalKutu(s); if (snk) kids.push(snk);
+    const ngk = normalGunKutu(s); if (ngk) kids.push(ngk);
+    const hbk = havaBirlikteKutu(s); if (hbk) kids.push(hbk);
+    const byk = bayramKutu(s); if (byk) kids.push(byk);
+    const slk = saatlikKutu(s); if (slk) kids.push(slk);
+    const pfk = profilKutu(s); if (pfk) kids.push(pfk);
+    const tsk = tespitKutu(s); if (tsk) kids.push(tsk);
+    const ilk = iliskiKutu(s); if (ilk) kids.push(ilk);
+    const n = NIHAI[s.nihai_durum]||[s.nihai_durum,""];
+    kids.push(el("div",{class:"kv"},el("b",{},"İncelenen aralık"),el("span",{},trMetin(s.pencere||"–")),el("b",{},"İnsan gerekti"),el("span",{},s.insan_gerekli?"evet":"hayır"),el("b",{},"Nihai durum"),el("span",{},tag(n[0],n[1]))));
+    const h = s.hipotezler||{};
+    if (Object.keys(h).length) kids.push(el("table",{},el("thead",{},el("tr",{},el("th",{},"Olası neden"),el("th",{},"Durum"))),el("tbody",{},Object.entries(h).map(([k,v])=>{ const d=DESTEK[v]||[v,""]; return el("tr",{},el("td",{},hipAd(k)),el("td",{},tag(d[0],d[1]))); }))));
+    if ((s.karsilastirma||[]).length) kids.push(el("table",{},el("thead",{},el("tr",{},...["Gün","Normale göre oran","Destekleyen neden","Takvim"].map(x=>el("th",{},x)))),
+      el("tbody",{},s.karsilastirma.map(k=>el("tr",{},el("td",{},gunLink(k.gun)),el("td",{},k.oran==null?"hesaplanamadı":yuzde(k.oran.toFixed(2))),
+        el("td",{},k.bekliyor?"kanıt yetersiz, insan onayı gerekir":((k.destekleyen||[]).map(hipAd).join(", ")||"yok")),el("td",{},(k.takvim||[]).join(", ")||"–"))))));
+    if ((s.haftalar||[]).length) kids.push(el("table",{},el("thead",{},el("tr",{},...["Hafta","Günler","Değerlendirilebilen gün","Olağandışı günler"].map(x=>el("th",{},x)))),
+      el("tbody",{},s.haftalar.map(w=>el("tr",{},el("td",{},w.hafta+". hafta"),el("td",{},trGun(w.baslangic)+" – "+trGun(w.bitis)),
+        el("td",{},w.yuklu_gun?(w.degerlendirilebilen+"/"+w.yuklu_gun):"yüklü gün yok"),
+        gunlarHucre((w.adaylar||[]).map(x=>({gun:x.gun,ek:" "+(x.durum==="dusus"?"düşüş":x.durum==="artis"?"artış":x.durum.replace(/_/g," "))+(x.oran!=null?" ("+yuzde(x.oran.toFixed(2))+")":"")})),"aday yok"))))));
+    if ((s.tatil_haftalari||[]).length) kids.push(el("table",{},el("thead",{},el("tr",{},...["Hafta","Günler","Tatilden etkilendi","Tatil günleri ve normale göre oran"].map(x=>el("th",{},x)))),
+      el("tbody",{},s.tatil_haftalari.map(w=>el("tr",{},el("td",{},w.hafta+". hafta"),el("td",{},trGun(w.baslangic)+" – "+trGun(w.bitis)),el("td",{},w.etkilendi?"evet":"hayır"),
+        gunlarHucre((w.tatil_gunleri||[]).map(g=>({gun:g.gun,ek:" "+g.ad+(g.oran!=null?" ("+yuzde(g.oran.toFixed(2))+")":(g.yuklu?"":" (veri yüklü değil)"))})),"resmî tatil yok"))))));
+    if ((s.bayram_karsilastirma||[]).length) kids.push(el("table",{},el("thead",{},el("tr",{},...["Bayram","Tarih aralığı","Gün sayısı","Değerlendirilen gün","Ortanca oran","Düşüş günü","NO2 ortanca oran (ek bilgi)","Günler ve normale göre oran"].map(x=>el("th",{},x)))),
+      el("tbody",{},s.bayram_karsilastirma.map(d=>el("tr",{},el("td",{},d.ad+" "+d.yil),el("td",{},trGun(d.baslangic)+" – "+trGun(d.bitis)),el("td",{},d.gun_sayisi),el("td",{},d.degerlendirilen+"/"+d.gun_sayisi),
+        el("td",{},d.medyan_oran==null?"–":yuzde(Number(d.medyan_oran).toFixed(2))),el("td",{},d.dusus_gun),
+        el("td",{},d.no2_medyan==null?"–":yuzde(Number(d.no2_medyan).toFixed(2))+" ("+d.no2_gun+"/"+d.gun_sayisi+" gün)"),
+        gunlarHucre((d.gunler||[]).map(g=>({gun:g.gun,ek:(g.oran!=null?" ("+yuzde(g.oran.toFixed(2))+")":"")+(g.no2_orani!=null?" NO2 "+yuzde(Number(g.no2_orani).toFixed(2)):"")})))))))); 
+    if ((s.ay_karsilastirma||[]).length) kids.push(el("table",{},el("thead",{},el("tr",{},...["Ay","Taranan gün","Değerlendirilebilen","Sapma günü","Düşüş","Artış","En çok sapan gün","NO2 oranı"].map(x=>el("th",{},x)))),
+      el("tbody",{},s.ay_karsilastirma.map(k=>el("tr",{},el("td",{},k.ay),el("td",{},k.taranan),el("td",{},k.degerlendirilebilen),el("td",{},k.sapma),el("td",{},k.dusus),el("td",{},k.artis),
+        (k.en_sapan?el("td",{},gunLink(k.en_sapan.gun)," ("+yuzde(k.en_sapan.oran.toFixed(2))+")"):el("td",{},"yok")),el("td",{},k.no2_orani==null?"–":yuzde(Number(k.no2_orani).toFixed(2))))))));
+    const donemSatir = (ad,d) => el("tr",{},el("td",{},ad),el("td",{},trGun(d.baslangic)+" – "+trGun(d.bitis)),el("td",{},d.gun_sayisi),el("td",{},d.degerlendirilen+"/"+d.gun_sayisi),
+      el("td",{},d.medyan_oran==null?"–":yuzde(Number(d.medyan_oran).toFixed(2))),el("td",{},d.dusus_gun),
+      gunlarHucre((d.gunler||[]).filter(g=>g.yuklu!==false).map(g=>({gun:g.gun,ek:g.oran!=null?" ("+yuzde(g.oran.toFixed(2))+")":""}))));
+    const donemTablo = satirlar => el("table",{},el("thead",{},el("tr",{},...["Grup","Tarih aralığı","Gün sayısı","Değerlendirilen gün","Ortanca oran","Düşüş günü","Günler ve normale göre oran (güne tıklayınca incelenir)"].map(x=>el("th",{},x)))),
+      el("tbody",{},satirlar.map(([a,d])=>donemSatir(a,d))));
+    if (s.hafta_ici_sonu) kids.push(donemTablo([["Hafta içi",s.hafta_ici_sonu.hafta_ici],["Hafta sonu",s.hafta_ici_sonu.hafta_sonu]]));
+    if (s.bayram_cevresi) kids.push(donemTablo([["Bayram öncesi",s.bayram_cevresi.oncesi],["Bayram",s.bayram_cevresi.bayram],["Bayram sonrası",s.bayram_cevresi.sonrasi]]));
+    if (s.normal_hafta) kids.push(donemTablo([["Seçilen hafta",s.normal_hafta.donem]]));
+    if (s.gun_siralama) kids.push(el("table",{},el("thead",{},el("tr",{},...["Sıra","Gün (tıklayınca incelenir)","Normale göre oran","Durum","Eksik saat"].map(x=>el("th",{},x)))),
+      el("tbody",{},(s.gun_siralama.gunler||[]).map((g,i)=>el("tr",{},el("td",{},i+1),el("td",{},gunLink(g.gun)),el("td",{},g.oran==null?"–":yuzde(g.oran.toFixed(2))),
+        el("td",{},DURUM_TR[g.durum]||g.durum||""),el("td",{},g.eksik_saat?g.eksik_saat+"/"+g.toplam_saat:"–"))))));
+    if (s.eksik_veri_gunleri && (s.eksik_veri_gunleri.gunler||[]).length) kids.push(el("table",{},el("thead",{},el("tr",{},...["Gün (tıklayınca incelenir)","Durum","Eksik saat"].map(x=>el("th",{},x)))),
+      el("tbody",{},s.eksik_veri_gunleri.gunler.map(g=>el("tr",{},el("td",{},gunLink(g.gun)),el("td",{},DURUM_TR[g.durum]||g.durum||""),el("td",{},g.durum==="veri_yok"?"tümü":g.eksik_saat+"/"+g.toplam_saat))))));
+    kids.push(el("p",{class:"note"},"Tam rapor (kanıtlar, kaynaklar, sınırlar) için 2. bölümde aynı pencereyi inceleyin."));
+    kids.push(mdDugme(()=>askMd(r, soru)));
+    const csv = csvDugme(s); if (csv) kids.push(csv);
+    const ust = ustUsteDugme(s); if (ust) kids.push(ust);
+  } else if (s.tip==="bekliyor" && s.soru){
+    const q = s.soru, G = {dusuk:"Düşük",orta:"Orta",yuksek:"Yüksek"};
+    const dest = (q.destekleyen||[]).map(hipAd).join(", ")||"yok";
+    const bel = (q.belirsiz||[]).map(hipAd).join(", ")||"yok";
+    kids.push(el("div",{class:"box warn"},el("b",{},"Kök neden kanıtla belirlenemedi: karar insana bırakıldı."),
+      el("div",{class:"kv"},el("b",{},"İncelenen aralık"),el("span",{},trMetin(q.pencere||"–")),el("b",{},"Güven"),el("span",{},G[q.guven]||q.guven||"–"),
+        el("b",{},"Desteklenen neden"),el("span",{},dest),el("b",{},"Belirsiz"),el("span",{},bel),
+        el("b",{},"Not"),el("span",{},Array.isArray(q.notlar)?q.notlar.join("; "):(q.notlar||"–"))),
+      el("p",{class:"note"},"Onayla, Ek inceleme iste veya Reddet seçenekleri için 2. bölümde (Pencere incelemesi) aynı pencereyi inceleyin.")));
+    const tkb2 = takvimKutu(s); if (tkb2) kids.push(tkb2);
+    const snk2 = sinyalKutu(s); if (snk2) kids.push(snk2);
+  } else if (s.tip==="kapsam_disi"){
+    kids.push(el("div",{class:"box warn"},el("b",{},"Bu istek kapsam dışında."),el("p",{},(s.nedenler||[]).map(x=>trMetin(x)).join("; ")||"Sistem yalnızca yüklü dönemleri inceler."),el("p",{class:"note"},"Sistem yalnızca yüklü dönemleri inceler; veri olmayan bir tarih için neden uydurmaz.")));
+  } else if (s.tip==="eksik"){
+    kids.push(el("div",{class:"box warn"},el("b",{},"Soruyu çalıştırmak için bilgi eksik."),el("p",{},trMetin(s.mesaj||"Analiz için tarih gerekli. Örnek: '10 Nisan 2024 trafik neden düştü'."))));
+    const ork = ornekCikar(s.mesaj), oL = ork.length ? ork : (window.__ornekler||[]).slice(0,3);
+    if (oL.length) kids.push(el("div",{class:"row"},el("span",{class:"note"},"Tek tıkla dene:"),...oL.map(t=>el("button",{class:"sec",onclick:()=>{ $("q").value=t; $("btn-soru").click(); }},t))));
+  } else {
+    kids.push(el("div",{class:"box warn"},el("b",{},"Cevap beklenen biçimde değil; ham çıktı aşağıda.")));
+  }
+  if (adimlar && s.durum!=="off_topic" && s.durum!=="out_of_scope" && s.tip!=="kapsam_disi") kids.push(el("p",{class:"note"},"Yapılan işlemler: "+adimlar));
+  kids.push(hamDetay(r));
+  fill(out, ...kids);
+}
+$("btn-soru").onclick = async () => {
+  const b=$("btn-soru"), out=$("soru-out"); busy(b,true);
+  try{ const r = await api("/ask",{soru:$("q").value}); askGoster(out, r); gecmisEkle($("q").value); }
+  catch(e){ fail(out,e); } finally{ busy(b,false); }
+};
+
+/* ornek sorular + nasil kullanilir */
+(function(){
+  const bar = el("div",{class:"row",style:"margin-top:8px"});
+  bar.append(el("span",{class:"note"},"Örnek sorular:"));
+  const lst = el("span",{style:"display:contents"});
+  const dugmeler = L => L.map(t=>el("button",{class:"sec",onclick:()=>{ $("q").value=t; $("btn-soru").click(); }},t));
+  const SABIT = ["Deprem verisi hangi büyüklükten itibaren tam?","Bayramlarda trafik ne kadar düşüyor?","Nisan 2024'te hangi haftalar tatilden etkilendi","2023 Ramazan Bayramı ile Kurban Bayramı karşılaştır","Nisan 2024'te hangi gün en çok düştü","Ocak Şubat Mart 2023 karşılaştır","Ramazan Bayramı 2023 öncesi ve sonrası trafik nasıl"];
+  fill(lst, ...dugmeler(["22.04.2023 neden düştü","20.04.2023 neden arttı"].concat(SABIT)));
+  bar.append(lst);
+  $("btn-soru").parentElement.after(bar);
+  const gk = el("div",{id:"soru-gecmis",class:"row",style:"margin-top:6px"});
+  bar.after(gk); gecmisCiz();
+  fetch("/ornekler").then(r=>r.json()).then(j=>{ if (j && Array.isArray(j.ornekler) && j.ornekler.length) { window.__ornekler = j.ornekler; fill(lst, ...dugmeler(j.ornekler.concat(SABIT))); } }).catch(()=>{});
+  const hizli = (t,a,b) => el("button",{class:"sec",onclick:()=>{ if (typeof incelePencere==="function") incelePencere(a,b); else { $("a1").value=trGoster(a); $("a2").value=trGoster(b); incele(); } }},t);
+  const g = el("section",{id:"s-rehber"},
+    el("h2",{},"Nasıl kullanılır?"),
+    el("ol",{},
+      el("li",{},"Grafikte tarih aralığı seçip Göster'e basın. Gri şerit veri sorunu, gölgeli bölge olağandışı saatler demektir."),
+      el("li",{},"Bir bölgedeki veya taramadaki İncele düğmesi, sistemin nedeni araştırmasını başlatır: veri kaydına, havaya, tatile ve depreme bakılır."),
+      el("li",{},"Kanıt yetersizse sistem karar vermez, size sorar: Onayla, Ek inceleme veya Reddet."),
+      el("li",{},"Reddederseniz iddianız aynı bilgi kaynaklarıyla sınanır ve kaydedilir; otomatik kabul edilmez.")),
+    el("p",{class:"note"},"Sistem kanıt bulamazsa \"açıklanamayan\" der ve neden uydurmaz."),
+    el("details",{id:"sozluk"},el("summary",{},"Bu ekrandaki sözcükler ne demek?"),
+      el("ul",{},
+        el("li",{},el("b",{},"Normale göre oran: "),"O saatteki ya da günkü trafiğin, önceki 4 haftanın aynı gün ve saatindeki trafiğe bölümüdür. 1,0 normal demektir; 0,70 yüzde 30 az, 1,30 yüzde 30 fazla demektir."),
+        el("li",{},el("b",{},"Olağandışı: "),"Oran normalin belirgin altında (0,85'ten az) ya da üstünde (1,15'ten fazla) ise gün olağandışı sayılır. Bu bir uyarıdır, nedenin kanıtı değildir."),
+        el("li",{},el("b",{},"Veri sorunu: "),"Kaynak dosyada eksik ya da şüpheli saatler. Bu saatler hesaba katılmaz ve grafikte gri gösterilir."),
+        el("li",{},el("b",{},"Açıklanamayan: "),"Elimizdeki kaynaklar değişimi açıklamıyor. Sistem neden uydurmaz, karar insana kalır."),
+        el("li",{},el("b",{},"Güven: "),"Sonucun ne kadar sağlam olduğu. Düşükse insan onayı istenir."),
+        el("li",{},el("b",{},"NO2 ve PM10: "),"Hava kirliliği ölçümleri. NO2 büyük ölçüde araç egzozundan gelir; trafikle birlikte düşmesi beklenir ama bu nedeni kanıtlamaz."))),
+    el("div",{class:"row"},el("span",{class:"note"},"Hızlı örnekler:"),
+      hizli("22 Nisan 2023 (bayram)","2023-04-22 02:00","2023-04-22 18:00"),
+      hizli("19 Nisan 2023 (eksik veri)","2023-04-19 00:00","2023-04-19 23:00"),
+      hizli("20 Nisan 2023 (artış)","2023-04-20 13:00","2023-04-20 16:00"),
+      hizli("29 Haziran 2023 (Kurban Bayram\u0131)","2023-06-29 00:00","2023-06-29 23:00"),
+      hizli("11 Nisan 2024 (Ramazan Bayram\u0131)","2024-04-11 00:00","2024-04-11 23:00"),
+      hizli("29 Ekim 2022 (Cumhuriyet Bayram\u0131)","2022-10-29 00:00","2022-10-29 23:00"),
+    hizli("8 Nisan 2024 (idari izin)","2024-04-08 00:00","2024-04-08 23:00"),
+    hizli("23 Kas\u0131m 2022 (deprem)","2022-11-23 00:00","2022-11-23 23:00"),
+    hizli("5 Eyl\u00fcl 2023 (sel: sistem g\u00f6rm\u00fcyor)","2023-09-05 00:00","2023-09-05 23:00")));
+  document.querySelector("main").prepend(g);
+})();
+
+/* soru kutusu: yazdikca oneri */
+(function(){
+  const q = $("q"), kap = q.parentElement; kap.style.position = "relative";
+  const kutu = el("div",{id:"oneri",role:"listbox",style:"display:none;position:absolute;left:0;right:0;top:100%;z-index:20;background:#fff;border:1px solid var(--line);box-shadow:0 4px 12px rgba(0,0,0,.12);max-height:260px;overflow:auto"});
+  kap.append(kutu);
+  const STATIK = ["22.04.2023 neden düştü","20.04.2023 neden arttı","10 Nisan 2024 neden normal","17 Nisan 2024 neden normal","Nisan 2024'te anomali var mıydı","Nisan 2024 haftalık özet",
+    "Nisan 2024'te en çok sapan 3 günü bul","10 Nisan ile 17 Nisan 2024 karşılaştır","Mart 2024 ile Nisan 2024 karşılaştır","Nisan 2024'te kaç gün eksik veri vardı","Nisan 2024'te hafta içi ile hafta sonu karşılaştır","8-14 Nisan 2024 neden normaldi","08.04.2024 anomali incele","23.11.2022 neden düştü",
+    "Bayramlarda trafik ne kadar düşüyor?","Bayramlarda trafik ve NO2 ne kadar düşüyor?","Trafik ile NO2 ilişkisi nedir?","Trafik ve NO2 arasında saatlik gecikme var mı?","Bayram günlerinde gün içi trafik ve NO2 profili","Sistem bilinen olayları ne kadar yakalıyor?","Nisan 2024'te trafik düşen kaç günde NO2 de düştü?","Deprem verisi hangi büyüklükten itibaren tam?"];
+  let liste = [], aktif = -1;
+  const kapat = () => { kutu.style.display = "none"; aktif = -1; };
+  const sec = t => { q.value = t; kapat(); q.focus(); };
+  const ciz = () => { liste = oneriSuz(gecmisOku().concat(window.__ornekler||[], STATIK), q.value, 6);
+    if (!liste.length || (liste.length===1 && liste[0]===q.value)) return kapat();
+    kutu.replaceChildren(...liste.map((t,i)=>{ const d = el("div",{role:"option",style:"padding:6px 10px;cursor:pointer;"+(i===aktif?"background:#e8eff7":"")},t);
+      d.onmousedown = ev => { ev.preventDefault(); sec(t); }; return d; }));
+    kutu.style.display = "block"; };
+  q.addEventListener("input", () => { aktif = -1; ciz(); });
+  q.addEventListener("focus", ciz);
+  q.addEventListener("blur", () => setTimeout(kapat, 120));
+  q.addEventListener("keydown", ev => {
+    const acik = kutu.style.display !== "none";
+    if (ev.key === "ArrowDown" && acik){ ev.preventDefault(); aktif = (aktif+1) % liste.length; ciz(); }
+    else if (ev.key === "ArrowUp" && acik){ ev.preventDefault(); aktif = (aktif-1+liste.length) % liste.length; ciz(); }
+    else if (ev.key === "Escape"){ kapat(); }
+    else if (ev.key === "Enter"){ if (acik && aktif >= 0){ ev.preventDefault(); sec(liste[aktif]); } else { kapat(); $("btn-soru").click(); } }
+  });
+})();
+</script>
+<script>/* keywrap-401: sunucu anahtar isterse alani goster */
+(function(){var of=window.fetch;window.fetch=function(){return of.apply(this,arguments).then(function(r){if(r&&r.status===401){var w=document.getElementById("keywrap");if(w){w.style.display="";}}return r;});};})();
+</script></body>
+</html>

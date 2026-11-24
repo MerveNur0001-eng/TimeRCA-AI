@@ -1,0 +1,214 @@
+﻿{
+    "durum":  "tamamlandi",
+    "rapor":  {
+                  "window":  "2022-11-23 00:00 - 2022-11-23 23:00",
+                  "deviation":  true,
+                  "median_ratio":  0.73,
+                  "hypotheses":  [
+                                     {
+                                         "name":  "veri_hatasi",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "ETL\u0027de işaretli saat: 0; pencereyle kesişen boşluk: 0; temiz saat: 24.",
+                                         "sources":  [
+                                                         "check_etl_log",
+                                                         "compare_same_weekday_history"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "hava",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "Yağış 3.6 mm (dönem günlük p90: 7.2 mm); azami rüzgâr 30.6 km/s.",
+                                         "sources":  [
+                                                         "get_weather"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "tatil",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "Pencerede resmî tatil yok.",
+                                         "sources":  [
+                                                         "get_calendar"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "deprem",
+                                         "status":  "belirsiz",
+                                         "detail":  "1 ilgili olay; en büyüğü M6.1, İstanbul\u0027a 169 km.",
+                                         "sources":  [
+                                                         "get_earthquakes"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "aciklanamayan",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "Diğer hipotezlerin hiçbiri sapmayı açıklamıyorsa desteklenir.",
+                                         "sources":  [
+
+                                                     ]
+                                     }
+                                 ],
+                  "confidence":  "dusuk",
+                  "needs_human":  true,
+                  "summary_tr":  "2022-11-23 00:00 - 2022-11-23 23:00 aralığında trafik hacmi baseline\u0027ın 0.73 katı. Kesin neden belirlenemedi (açıklanamayan). Belirsiz: deprem. İnsan incelemesi gerekli.",
+                  "caveats":  [
+                                  "Baseline: önceki 4 haftanın aynı gün-saati medyanı; tatil haftaları baseline\u0027ı kirletebilir.",
+                                  "Hava: Open-Meteo reanalysis, tek nokta; istasyon ölçümü değil.",
+                                  "ETL logu yalnızca bizim yüklememizde görülenleri kaydeder, boşluğun nedenini söylemez.",
+                                  "Eşikler Nisan 2023 üzerinde ayarlandı; dış etiketli bağımsız ilk ölçüm (v3, 13 pencere) küçük örneklemlidir, ayrıntı docs/07-degerlendirme.md."
+                              ],
+                  "notes":  [
+                                "Ilgili deprem sayisi=1"
+                            ],
+                  "insan_karari_2":  null,
+                  "ek_inceleme":  null,
+                  "kaynakli_notlar":  [
+                                          {
+                                              "id":  "deprem_araci.md#1",
+                                              "file":  "deprem_araci.md",
+                                              "tool":  "get_earthquakes",
+                                              "text":  "Kaynak: USGS FDSN, önceden indirilmiş yerel katalog (2021-11/2022-02, 2022-09/2022-12, 2023-02/2024-02 ve 2024-03/2024-05 aralıkları). USGS saatleri UTC, yerel saate +3 saat çevriliyor."
+                                          },
+                                          {
+                                              "id":  "deprem_araci.md#2",
+                                              "file":  "deprem_araci.md",
+                                              "tool":  "get_earthquakes",
+                                              "text":  "Tamlık: USGS belgelerine göre dünya genelinde yaklaşık M4,5\u0027e kadar tam (docs/05). M4-4,5 arası eksik olabilir."
+                                          },
+                                          {
+                                              "id":  "deprem_araci.md#3",
+                                              "file":  "deprem_araci.md",
+                                              "tool":  "get_earthquakes",
+                                              "text":  "İlgili deprem kuralı: M\u003e=4,5 ve İstanbul\u0027a en fazla 500 km, veya M\u003e=6,5 her mesafe. Eşikler seçimdir, trafik etkisi için bilinen bir eşik değildir."
+                                          },
+                                          {
+                                              "id":  "deprem_araci.md#4",
+                                              "file":  "deprem_araci.md",
+                                              "tool":  "get_earthquakes",
+                                              "text":  "Araç pencerenin başlangıcından önceki 12 saati de tarar, bu yüzden olay pencereden önce olmuş olabilir (inside_window alanı)."
+                                          },
+                                          {
+                                              "id":  "deprem_araci.md#5",
+                                              "file":  "deprem_araci.md",
+                                              "tool":  "get_earthquakes",
+                                              "text":  "Büyüklük ve mesafe tek başına neden sayılmaz: zaman sırası ve trafik sapması da uyumlu olmalı."
+                                          },
+                                          {
+                                              "id":  "deprem_araci.md#6",
+                                              "file":  "deprem_araci.md",
+                                              "tool":  "get_earthquakes",
+                                              "text":  "AFAD API\u0027si geçmiş sorgulara boş döndü, kullanılmıyor."
+                                          }
+                                      ],
+                  "insan_karari":  {
+                                       "karar":  "onayla",
+                                       "ham_yanit":  "onayla"
+                                   },
+                  "nihai_durum":  "onaylandi",
+                  "arac_ciktilari":  {
+                                         "check_etl_log":  {
+                                                               "tool":  "check_etl_log",
+                                                               "months_checked":  [
+                                                                                      "2022-11"
+                                                                                  ],
+                                                               "months_without_log":  [
+
+                                                                                      ],
+                                                               "gaps_near_window":  [
+
+                                                                                    ],
+                                                               "low_cell_coverage_hours":  [
+
+                                                                                           ],
+                                                               "density_suspect_hours":  [
+
+                                                                                         ],
+                                                               "limits":  "Log yalniz yuklemede gorulenleri kaydeder, bosluk nedenini soylemez. Logu olmayan aylar icin bilgi yok (months_without_log)."
+                                                           },
+                                         "compare_same_weekday_history":  {
+                                                                              "tool":  "compare_same_weekday_history",
+                                                                              "hours_in_window":  24,
+                                                                              "hours_missing":  0,
+                                                                              "hours_no_baseline":  0,
+                                                                              "hours_etl_flagged":  0,
+                                                                              "median_ratio_all":  0.73,
+                                                                              "median_ratio_excl_etl_flagged":  0.73,
+                                                                              "n_clean_hours":  24,
+                                                                              "n_clean_below_0.7":  5,
+                                                                              "n_clean_above_1.3":  0,
+                                                                              "most_deviant_clean_hours":  [
+                                                                                                               {
+                                                                                                                   "ts":  "2022-11-23 07:00:00",
+                                                                                                                   "value":  137885.0,
+                                                                                                                   "baseline":  238112.0,
+                                                                                                                   "ratio":  0.58,
+                                                                                                                   "n_weeks":  4,
+                                                                                                                   "etl_flagged":  false
+                                                                                                               },
+                                                                                                               {
+                                                                                                                   "ts":  "2022-11-23 08:00:00",
+                                                                                                                   "value":  127427.0,
+                                                                                                                   "baseline":  196317.0,
+                                                                                                                   "ratio":  0.65,
+                                                                                                                   "n_weeks":  4,
+                                                                                                                   "etl_flagged":  false
+                                                                                                               },
+                                                                                                               {
+                                                                                                                   "ts":  "2022-11-23 13:00:00",
+                                                                                                                   "value":  144072.0,
+                                                                                                                   "baseline":  218927.0,
+                                                                                                                   "ratio":  0.66,
+                                                                                                                   "n_weeks":  4,
+                                                                                                                   "etl_flagged":  false
+                                                                                                               }
+                                                                                                           ],
+                                                                              "baseline_days_of_first_hour":  [
+                                                                                                                  "2022-11-16",
+                                                                                                                  "2022-11-09",
+                                                                                                                  "2022-11-02",
+                                                                                                                  "2022-10-26"
+                                                                                                              ],
+                                                                              "limits":  "Baseline = onceki 4 haftanin ayni gun-saati medyani, en az 3 gecerli hafta gerekir. baseline_days_of_first_hour icin get_calendar ve get_weather ile baseline kirliligini kontrol et."
+                                                                          },
+                                         "get_weather":  {
+                                                             "tool":  "get_weather",
+                                                             "hours":  24,
+                                                             "precip_total_mm":  3.6,
+                                                             "precip_max_hour_mm":  1.0,
+                                                             "wind_max_kmh":  30.6,
+                                                             "temp_mean_c":  14.4,
+                                                             "period_daily_precip_median_mm":  0.1,
+                                                             "period_daily_precip_p90_mm":  7.2,
+                                                             "limits":  "Open-Meteo reanalysis, tek nokta (41.01, 28.98), istasyon olcumu degil, tum Istanbul\u0027u temsil etmez."
+                                                         },
+                                         "get_calendar":  {
+                                                              "tool":  "get_calendar",
+                                                              "days":  [
+                                                                           {
+                                                                               "date":  "2022-11-23",
+                                                                               "weekday":  "Wednesday",
+                                                                               "holiday":  null,
+                                                                               "day_before_holiday":  false
+                                                                           }
+                                                                       ],
+                                                              "limits":  "Yalniz resmi tatil/bayram. Arife yarim gunu, secim gunu, mac gibi etkinlikler yok."
+                                                          },
+                                         "get_earthquakes":  {
+                                                                 "tool":  "get_earthquakes",
+                                                                 "source":  "USGS FDSN, onceden indirilmis katalog (indirilen M\u003e=4, tam olan M\u003e=4,5)",
+                                                                 "n_relevant":  1,
+                                                                 "top_events":  [
+                                                                                    {
+                                                                                        "time_local":  "2022-11-23 04:08:15",
+                                                                                        "mag":  6.1,
+                                                                                        "place":  "15 km W of Düzce, Turkey",
+                                                                                        "dist_km_to_istanbul":  169,
+                                                                                        "inside_window":  true
+                                                                                    }
+                                                                                ],
+                                                                 "limits":  "Katalog yaklasik M4,5 ustu icin tam (USGS ComCat dunya geneli tamlik M4,5), M4-4,5 arasi eksik olabilir. Alaka kurali: M\u003e=4.5 ve \u003c=500 km, veya M\u003e=6.5 her mesafe; bu esikler secimdir, trafik etkisi icin bilinen bir esik degil. Buyukluk ve mesafe tek basina nedensellik gostermez, zaman sirasina bak."
+                                                             }
+                                     },
+                  "veri_kalitesi_uyarisi":  null,
+                  "degerlendirilemedi":  false
+              }
+}

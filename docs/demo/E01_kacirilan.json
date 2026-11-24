@@ -1,0 +1,211 @@
+﻿{
+    "durum":  "tamamlandi",
+    "rapor":  {
+                  "window":  "2022-01-24 00:00 - 2022-01-24 23:00",
+                  "deviation":  false,
+                  "median_ratio":  0.91,
+                  "hypotheses":  [
+                                     {
+                                         "name":  "veri_hatasi",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "ETL\u0027de işaretli saat: 4; pencereyle kesişen boşluk: 0; temiz saat: 20.",
+                                         "sources":  [
+                                                         "check_etl_log",
+                                                         "compare_same_weekday_history"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "hava",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "Yağış 4.6 mm (dönem günlük p90: 7.2 mm); azami rüzgâr 33.4 km/s.",
+                                         "sources":  [
+                                                         "get_weather"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "tatil",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "Pencerede resmî tatil yok.",
+                                         "sources":  [
+                                                         "get_calendar"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "deprem",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "İlgili deprem kaydı yok.",
+                                         "sources":  [
+                                                         "get_earthquakes"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "aciklanamayan",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "Diğer hipotezlerin hiçbiri sapmayı açıklamıyorsa desteklenir.",
+                                         "sources":  [
+
+                                                     ]
+                                     }
+                                 ],
+                  "confidence":  "orta",
+                  "needs_human":  false,
+                  "summary_tr":  "2022-01-24 00:00 - 2022-01-24 23:00 aralığında belirgin bir sapma yok (medyan oran 0.91).",
+                  "caveats":  [
+                                  "Baseline: önceki 4 haftanın aynı gün-saati medyanı; tatil haftaları baseline\u0027ı kirletebilir.",
+                                  "Hava: Open-Meteo reanalysis, tek nokta; istasyon ölçümü değil.",
+                                  "ETL logu yalnızca bizim yüklememizde görülenleri kaydeder, boşluğun nedenini söylemez.",
+                                  "Eşikler Nisan 2023 üzerinde ayarlandı; dış etiketli bağımsız ilk ölçüm (v3, 13 pencere) küçük örneklemlidir, ayrıntı docs/07-degerlendirme.md."
+                              ],
+                  "notes":  [
+                                "Belirgin trafik sapmasi yok"
+                            ],
+                  "insan_karari_2":  null,
+                  "ek_inceleme":  null,
+                  "kaynakli_notlar":  [
+
+                                      ],
+                  "insan_karari":  null,
+                  "nihai_durum":  "otomatik",
+                  "arac_ciktilari":  {
+                                         "check_etl_log":  {
+                                                               "tool":  "check_etl_log",
+                                                               "months_checked":  [
+                                                                                      "2022-01"
+                                                                                  ],
+                                                               "months_without_log":  [
+
+                                                                                      ],
+                                                               "gaps_near_window":  [
+
+                                                                                    ],
+                                                               "low_cell_coverage_hours":  [
+                                                                                               {
+                                                                                                   "ts":  "2022-01-24 04:00:00",
+                                                                                                   "cells":  492,
+                                                                                                   "ratio":  0.22
+                                                                                               },
+                                                                                               {
+                                                                                                   "ts":  "2022-01-24 21:00:00",
+                                                                                                   "cells":  2109,
+                                                                                                   "ratio":  0.89
+                                                                                               },
+                                                                                               {
+                                                                                                   "ts":  "2022-01-24 22:00:00",
+                                                                                                   "cells":  2119,
+                                                                                                   "ratio":  0.9
+                                                                                               },
+                                                                                               {
+                                                                                                   "ts":  "2022-01-24 23:00:00",
+                                                                                                   "cells":  2093,
+                                                                                                   "ratio":  0.89
+                                                                                               }
+                                                                                           ],
+                                                               "density_suspect_hours":  [
+                                                                                             {
+                                                                                                 "ts":  "2022-01-24 04:00:00",
+                                                                                                 "ratio":  0.05,
+                                                                                                 "cells":  492,
+                                                                                                 "severity":  "high"
+                                                                                             },
+                                                                                             {
+                                                                                                 "ts":  "2022-01-24 22:00:00",
+                                                                                                 "ratio":  0.47,
+                                                                                                 "cells":  2119,
+                                                                                                 "severity":  "mild"
+                                                                                             },
+                                                                                             {
+                                                                                                 "ts":  "2022-01-24 23:00:00",
+                                                                                                 "ratio":  0.47,
+                                                                                                 "cells":  2093,
+                                                                                                 "severity":  "mild"
+                                                                                             }
+                                                                                         ],
+                                                               "limits":  "Log yalniz yuklemede gorulenleri kaydeder, bosluk nedenini soylemez. Logu olmayan aylar icin bilgi yok (months_without_log)."
+                                                           },
+                                         "compare_same_weekday_history":  {
+                                                                              "tool":  "compare_same_weekday_history",
+                                                                              "hours_in_window":  24,
+                                                                              "hours_missing":  0,
+                                                                              "hours_no_baseline":  0,
+                                                                              "hours_etl_flagged":  4,
+                                                                              "median_ratio_all":  0.89,
+                                                                              "median_ratio_excl_etl_flagged":  0.91,
+                                                                              "n_clean_hours":  20,
+                                                                              "n_clean_below_0.7":  3,
+                                                                              "n_clean_above_1.3":  0,
+                                                                              "most_deviant_clean_hours":  [
+                                                                                                               {
+                                                                                                                   "ts":  "2022-01-24 05:00:00",
+                                                                                                                   "value":  63625.0,
+                                                                                                                   "baseline":  132892.0,
+                                                                                                                   "ratio":  0.48,
+                                                                                                                   "n_weeks":  4,
+                                                                                                                   "etl_flagged":  false
+                                                                                                               },
+                                                                                                               {
+                                                                                                                   "ts":  "2022-01-24 20:00:00",
+                                                                                                                   "value":  120857.0,
+                                                                                                                   "baseline":  204463.0,
+                                                                                                                   "ratio":  0.59,
+                                                                                                                   "n_weeks":  4,
+                                                                                                                   "etl_flagged":  false
+                                                                                                               },
+                                                                                                               {
+                                                                                                                   "ts":  "2022-01-24 19:00:00",
+                                                                                                                   "value":  150168.0,
+                                                                                                                   "baseline":  221625.5,
+                                                                                                                   "ratio":  0.68,
+                                                                                                                   "n_weeks":  4,
+                                                                                                                   "etl_flagged":  false
+                                                                                                               }
+                                                                                                           ],
+                                                                              "baseline_days_of_first_hour":  [
+                                                                                                                  "2022-01-17",
+                                                                                                                  "2022-01-10",
+                                                                                                                  "2022-01-03",
+                                                                                                                  "2021-12-27"
+                                                                                                              ],
+                                                                              "limits":  "Baseline = onceki 4 haftanin ayni gun-saati medyani, en az 3 gecerli hafta gerekir. baseline_days_of_first_hour icin get_calendar ve get_weather ile baseline kirliligini kontrol et."
+                                                                          },
+                                         "get_weather":  {
+                                                             "tool":  "get_weather",
+                                                             "hours":  24,
+                                                             "precip_total_mm":  4.6,
+                                                             "precip_max_hour_mm":  1.6,
+                                                             "wind_max_kmh":  33.4,
+                                                             "temp_mean_c":  0.1,
+                                                             "period_daily_precip_median_mm":  0.1,
+                                                             "period_daily_precip_p90_mm":  7.2,
+                                                             "limits":  "Open-Meteo reanalysis, tek nokta (41.01, 28.98), istasyon olcumu degil, tum Istanbul\u0027u temsil etmez."
+                                                         },
+                                         "get_calendar":  {
+                                                              "tool":  "get_calendar",
+                                                              "days":  [
+                                                                           {
+                                                                               "date":  "2022-01-24",
+                                                                               "weekday":  "Monday",
+                                                                               "holiday":  null,
+                                                                               "day_before_holiday":  false
+                                                                           }
+                                                                       ],
+                                                              "limits":  "Yalniz resmi tatil/bayram. Arife yarim gunu, secim gunu, mac gibi etkinlikler yok."
+                                                          },
+                                         "get_earthquakes":  {
+                                                                 "tool":  "get_earthquakes",
+                                                                 "source":  "USGS FDSN, onceden indirilmis katalog (indirilen M\u003e=4, tam olan M\u003e=4,5)",
+                                                                 "n_relevant":  0,
+                                                                 "top_events":  [
+
+                                                                                ],
+                                                                 "limits":  "Katalog yaklasik M4,5 ustu icin tam (USGS ComCat dunya geneli tamlik M4,5), M4-4,5 arasi eksik olabilir. Alaka kurali: M\u003e=4.5 ve \u003c=500 km, veya M\u003e=6.5 her mesafe; bu esikler secimdir, trafik etkisi icin bilinen bir esik degil. Buyukluk ve mesafe tek basina nedensellik gostermez, zaman sirasina bak."
+                                                             }
+                                     },
+                  "veri_kalitesi_uyarisi":  {
+                                                "isaretli_saat":  4,
+                                                "eksik_saat":  0,
+                                                "toplam_saat":  24,
+                                                "eksik_oran":  0.0
+                                            },
+                  "degerlendirilemedi":  false
+              }
+}

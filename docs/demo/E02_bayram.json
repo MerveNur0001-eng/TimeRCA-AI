@@ -1,0 +1,264 @@
+﻿{
+    "durum":  "tamamlandi",
+    "rapor":  {
+                  "window":  "2024-04-10 00:00 - 2024-04-10 23:00",
+                  "deviation":  true,
+                  "median_ratio":  0.61,
+                  "hypotheses":  [
+                                     {
+                                         "name":  "veri_hatasi",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "ETL\u0027de işaretli saat: 10; pencereyle kesişen boşluk: 0; temiz saat: 14.",
+                                         "sources":  [
+                                                         "check_etl_log",
+                                                         "compare_same_weekday_history"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "hava",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "Yağış 0.0 mm (dönem günlük p90: 7.2 mm); azami rüzgâr 20.0 km/s.",
+                                         "sources":  [
+                                                         "get_weather"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "tatil",
+                                         "status":  "destekliyor",
+                                         "detail":  "Resmî tatil: Ramazan Bayramı.",
+                                         "sources":  [
+                                                         "get_calendar"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "deprem",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "İlgili deprem kaydı yok.",
+                                         "sources":  [
+                                                         "get_earthquakes"
+                                                     ]
+                                     },
+                                     {
+                                         "name":  "aciklanamayan",
+                                         "status":  "desteklemiyor",
+                                         "detail":  "Diğer hipotezlerin hiçbiri sapmayı açıklamıyorsa desteklenir.",
+                                         "sources":  [
+
+                                                     ]
+                                     }
+                                 ],
+                  "confidence":  "orta",
+                  "needs_human":  false,
+                  "summary_tr":  "2024-04-10 00:00 - 2024-04-10 23:00 aralığında trafik hacmi baseline\u0027ın 0.61 katı. Desteklenen: tatil/bayram.",
+                  "caveats":  [
+                                  "Baseline: önceki 4 haftanın aynı gün-saati medyanı; tatil haftaları baseline\u0027ı kirletebilir.",
+                                  "Hava: Open-Meteo reanalysis, tek nokta; istasyon ölçümü değil.",
+                                  "ETL logu yalnızca bizim yüklememizde görülenleri kaydeder, boşluğun nedenini söylemez.",
+                                  "Eşikler Nisan 2023 üzerinde ayarlandı; dış etiketli bağımsız ilk ölçüm (v3, 13 pencere) küçük örneklemlidir, ayrıntı docs/07-degerlendirme.md."
+                              ],
+                  "notes":  [
+                                "ETL isaretli saat=10, kesisen bosluk=0, temiz saat=14",
+                                "Tatil: Ramazan Bayramı"
+                            ],
+                  "insan_karari_2":  null,
+                  "ek_inceleme":  null,
+                  "kaynakli_notlar":  [
+                                          {
+                                              "id":  "resmi_tatil_bilgileri.md#1",
+                                              "file":  "resmi_tatil_bilgileri.md",
+                                              "tool":  "get_calendar",
+                                              "text":  "Kaynak: Python holidays paketi (Türkiye). Yalnızca resmî tatil ve bayramlar. Arife yarım günü, seçim günü, maç gibi etkinlikler yok."
+                                          },
+                                          {
+                                              "id":  "resmi_tatil_bilgileri.md#2",
+                                              "file":  "resmi_tatil_bilgileri.md",
+                                              "tool":  "get_calendar",
+                                              "text":  "Pilot dönem: 21-23 Nisan 2023 Ramazan Bayramı (23 Nisan aynı gün Ulusal Egemenlik ve Çocuk Bayramı), 1 Mayıs, 19 Mayıs."
+                                          },
+                                          {
+                                              "id":  "resmi_tatil_bilgileri.md#3",
+                                              "file":  "resmi_tatil_bilgileri.md",
+                                              "tool":  "get_calendar",
+                                              "text":  "Kurban Bayramı 2023: 28 Haziran-1 Temmuz (holidays paketi). Bu tarihler yüklü verinin dışındadır, kapsam dışıdır."
+                                          },
+                                          {
+                                              "id":  "resmi_tatil_bilgileri.md#4",
+                                              "file":  "resmi_tatil_bilgileri.md",
+                                              "tool":  "get_calendar",
+                                              "text":  "22 Nisan 2023 günlük düzeyde -%26 sapma gösterdi."
+                                          },
+                                          {
+                                              "id":  "resmi_tatil_bilgileri.md#5",
+                                              "file":  "resmi_tatil_bilgileri.md",
+                                              "tool":  "get_calendar",
+                                              "text":  "Çıktıda her gün için holiday (bayram adı) ve day_before_holiday alanı bulunur."
+                                          }
+                                      ],
+                  "insan_karari":  null,
+                  "nihai_durum":  "otomatik",
+                  "arac_ciktilari":  {
+                                         "check_etl_log":  {
+                                                               "tool":  "check_etl_log",
+                                                               "months_checked":  [
+                                                                                      "2024-04"
+                                                                                  ],
+                                                               "months_without_log":  [
+
+                                                                                      ],
+                                                               "gaps_near_window":  [
+
+                                                                                    ],
+                                                               "low_cell_coverage_hours":  [
+
+                                                                                           ],
+                                                               "density_suspect_hours":  [
+                                                                                             {
+                                                                                                 "ts":  "2024-04-10 05:00:00",
+                                                                                                 "ratio":  0.46,
+                                                                                                 "cells":  2296,
+                                                                                                 "severity":  "mild"
+                                                                                             },
+                                                                                             {
+                                                                                                 "ts":  "2024-04-10 06:00:00",
+                                                                                                 "ratio":  0.22,
+                                                                                                 "cells":  2357,
+                                                                                                 "severity":  "high"
+                                                                                             },
+                                                                                             {
+                                                                                                 "ts":  "2024-04-10 07:00:00",
+                                                                                                 "ratio":  0.2,
+                                                                                                 "cells":  2366,
+                                                                                                 "severity":  "high"
+                                                                                             },
+                                                                                             {
+                                                                                                 "ts":  "2024-04-10 08:00:00",
+                                                                                                 "ratio":  0.33,
+                                                                                                 "cells":  2382,
+                                                                                                 "severity":  "mild"
+                                                                                             },
+                                                                                             {
+                                                                                                 "ts":  "2024-04-10 09:00:00",
+                                                                                                 "ratio":  0.34,
+                                                                                                 "cells":  2374,
+                                                                                                 "severity":  "mild"
+                                                                                             },
+                                                                                             {
+                                                                                                 "ts":  "2024-04-10 10:00:00",
+                                                                                                 "ratio":  0.37,
+                                                                                                 "cells":  2391,
+                                                                                                 "severity":  "mild"
+                                                                                             },
+                                                                                             {
+                                                                                                 "ts":  "2024-04-10 11:00:00",
+                                                                                                 "ratio":  0.4,
+                                                                                                 "cells":  2397,
+                                                                                                 "severity":  "mild"
+                                                                                             },
+                                                                                             {
+                                                                                                 "ts":  "2024-04-10 12:00:00",
+                                                                                                 "ratio":  0.44,
+                                                                                                 "cells":  2392,
+                                                                                                 "severity":  "mild"
+                                                                                             },
+                                                                                             {
+                                                                                                 "ts":  "2024-04-10 17:00:00",
+                                                                                                 "ratio":  0.48,
+                                                                                                 "cells":  2405,
+                                                                                                 "severity":  "mild"
+                                                                                             },
+                                                                                             {
+                                                                                                 "ts":  "2024-04-10 18:00:00",
+                                                                                                 "ratio":  0.44,
+                                                                                                 "cells":  2402,
+                                                                                                 "severity":  "mild"
+                                                                                             }
+                                                                                         ],
+                                                               "limits":  "Log yalniz yuklemede gorulenleri kaydeder, bosluk nedenini soylemez. Logu olmayan aylar icin bilgi yok (months_without_log)."
+                                                           },
+                                         "compare_same_weekday_history":  {
+                                                                              "tool":  "compare_same_weekday_history",
+                                                                              "hours_in_window":  24,
+                                                                              "hours_missing":  0,
+                                                                              "hours_no_baseline":  0,
+                                                                              "hours_etl_flagged":  10,
+                                                                              "median_ratio_all":  0.54,
+                                                                              "median_ratio_excl_etl_flagged":  0.61,
+                                                                              "n_clean_hours":  14,
+                                                                              "n_clean_below_0.7":  10,
+                                                                              "n_clean_above_1.3":  0,
+                                                                              "most_deviant_clean_hours":  [
+                                                                                                               {
+                                                                                                                   "ts":  "2024-04-10 13:00:00",
+                                                                                                                   "value":  198112.0,
+                                                                                                                   "baseline":  387898.0,
+                                                                                                                   "ratio":  0.51,
+                                                                                                                   "n_weeks":  4,
+                                                                                                                   "etl_flagged":  false
+                                                                                                               },
+                                                                                                               {
+                                                                                                                   "ts":  "2024-04-10 16:00:00",
+                                                                                                                   "value":  213160.0,
+                                                                                                                   "baseline":  405978.0,
+                                                                                                                   "ratio":  0.53,
+                                                                                                                   "n_weeks":  4,
+                                                                                                                   "etl_flagged":  false
+                                                                                                               },
+                                                                                                               {
+                                                                                                                   "ts":  "2024-04-10 14:00:00",
+                                                                                                                   "value":  208987.0,
+                                                                                                                   "baseline":  390602.0,
+                                                                                                                   "ratio":  0.54,
+                                                                                                                   "n_weeks":  4,
+                                                                                                                   "etl_flagged":  false
+                                                                                                               }
+                                                                                                           ],
+                                                                              "baseline_days_of_first_hour":  [
+                                                                                                                  "2024-04-03",
+                                                                                                                  "2024-03-27",
+                                                                                                                  "2024-03-20",
+                                                                                                                  "2024-03-13"
+                                                                                                              ],
+                                                                              "limits":  "Baseline = onceki 4 haftanin ayni gun-saati medyani, en az 3 gecerli hafta gerekir. baseline_days_of_first_hour icin get_calendar ve get_weather ile baseline kirliligini kontrol et."
+                                                                          },
+                                         "get_weather":  {
+                                                             "tool":  "get_weather",
+                                                             "hours":  24,
+                                                             "precip_total_mm":  0.0,
+                                                             "precip_max_hour_mm":  0.0,
+                                                             "wind_max_kmh":  20.0,
+                                                             "temp_mean_c":  13.1,
+                                                             "period_daily_precip_median_mm":  0.1,
+                                                             "period_daily_precip_p90_mm":  7.2,
+                                                             "limits":  "Open-Meteo reanalysis, tek nokta (41.01, 28.98), istasyon olcumu degil, tum Istanbul\u0027u temsil etmez."
+                                                         },
+                                         "get_calendar":  {
+                                                              "tool":  "get_calendar",
+                                                              "days":  [
+                                                                           {
+                                                                               "date":  "2024-04-10",
+                                                                               "weekday":  "Wednesday",
+                                                                               "holiday":  "Ramazan Bayramı",
+                                                                               "day_before_holiday":  true
+                                                                           }
+                                                                       ],
+                                                              "limits":  "Yalniz resmi tatil/bayram. Arife yarim gunu, secim gunu, mac gibi etkinlikler yok."
+                                                          },
+                                         "get_earthquakes":  {
+                                                                 "tool":  "get_earthquakes",
+                                                                 "source":  "USGS FDSN, onceden indirilmis katalog (indirilen M\u003e=4, tam olan M\u003e=4,5)",
+                                                                 "n_relevant":  0,
+                                                                 "top_events":  [
+
+                                                                                ],
+                                                                 "limits":  "Katalog yaklasik M4,5 ustu icin tam (USGS ComCat dunya geneli tamlik M4,5), M4-4,5 arasi eksik olabilir. Alaka kurali: M\u003e=4.5 ve \u003c=500 km, veya M\u003e=6.5 her mesafe; bu esikler secimdir, trafik etkisi icin bilinen bir esik degil. Buyukluk ve mesafe tek basina nedensellik gostermez, zaman sirasina bak."
+                                                             }
+                                     },
+                  "veri_kalitesi_uyarisi":  {
+                                                "isaretli_saat":  10,
+                                                "eksik_saat":  0,
+                                                "toplam_saat":  24,
+                                                "eksik_oran":  0.0
+                                            },
+                  "degerlendirilemedi":  false
+              }
+}

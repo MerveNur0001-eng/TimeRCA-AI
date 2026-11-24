@@ -1,0 +1,489 @@
+{
+  "name": "TimeRCA-AI tetikleyici",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "066587ed-7f97-453f-9195-471308e32439",
+      "name": "Manuel tetikleyici",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ec4fbd50-c7c5-4101-b561-b8bfe5c6313b",
+              "name": "soru",
+              "value": "23.11.2022 anomali incele",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "86984f5e-3b01-48cc-814c-da2be15d3c77",
+      "name": "SORU",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/ask",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ soru: $('SORU').first().json.soru }) }}",
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "41fd5fa8-10eb-45b4-854b-54f5da19057d",
+      "name": "ILK ISTEK",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "49e68ef8-7b0a-4ecf-bff6-499f1e7a3593",
+              "leftValue": "={{ $json.sonuc.tip }}",
+              "rightValue": "bekliyor",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "281645cf-695e-4afc-852e-17650271a071",
+      "name": "BEKLIYOR MU",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "İnsan onayı",
+        "formDescription": "=<b>{{ $('ILK ISTEK').first().json.sonuc.soru.soru }}</b><br>Pencere: {{ $('ILK ISTEK').first().json.sonuc.soru.pencere.replace(/(\\d{4})-(\\d{2})-(\\d{2})/g, '$3.$2.$1') }}<br>Güven: {{ ({'dusuk':'Düşük','orta':'Orta','yuksek':'Yüksek'})[$('ILK ISTEK').first().json.sonuc.soru.guven] || $('ILK ISTEK').first().json.sonuc.soru.guven }}<br>Desteklenen neden: {{ $('ILK ISTEK').first().json.sonuc.soru.destekleyen.map(x => ({'aciklanamayan':'Açıklanamayan','veri_hatasi':'Veri hatası','tatil':'Tatil / bayram','hava':'Hava','deprem':'Deprem'})[x] || x).join(', ') || 'yok' }}<br>Belirsiz: {{ $('ILK ISTEK').first().json.sonuc.soru.belirsiz.map(x => ({'aciklanamayan':'Açıklanamayan','veri_hatasi':'Veri hatası','tatil':'Tatil / bayram','hava':'Hava','deprem':'Deprem'})[x] || x).join(', ') || 'yok' }}<br>Not: {{ $('ILK ISTEK').first().json.sonuc.soru.notlar.join('; ') }}<br><br><b>Onayla:</b> sonucu olduğu gibi kabul et<br><b>Ek inceleme iste:</b> günün tamamı için ek bulgu göster, sonra karar ver<br><b>Reddet:</b> sonucu kabul etme, nedenini soracağız",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Karar",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Onayla"
+                  },
+                  {
+                    "option": "Ek inceleme iste"
+                  },
+                  {
+                    "option": "Reddet"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "10f9b51a-e005-4244-8251-1086a821ca64",
+      "name": "ONAY FORMU",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "webhookId": "3106c4d7-c135-4c9c-8673-aa439be68298",
+      "position": [
+        880,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/ask",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ soru: $('SORU').first().json.soru, karar: ({'Onayla':'onayla','Ek inceleme iste':'ek_inceleme','Reddet':'reddet'})[$('ONAY FORMU').first().json['Karar']] || $('ONAY FORMU').first().json['Karar'] }) }}",
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "b48fdd8c-0d56-45fd-b23e-f27b3e05f2fa",
+      "name": "KARAR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7fde8b19-f3eb-49c6-a71c-eaefde64cd81",
+              "leftValue": "={{ $json.sonuc.tip }}",
+              "rightValue": "bekliyor",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "af0dcc8d-665d-47ac-9932-864d7afaa6fa",
+      "name": "EK INCELEME MI",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Ek inceleme onayı",
+        "formDescription": "=<b>Ek inceleme sonucu (tüm gün). Nasıl devam edelim?</b><br>Gün: {{ String($('KARAR').first().json.sonuc.soru.gun).replace(/(\\d{4})-(\\d{2})-(\\d{2})/g, '$3.$2.$1') }}<br>{{ (() => { const B = $('KARAR').first().json.sonuc.soru.gun_bulgulari || {}; return ['Penceredeki saat: ' + B.hours_in_window, 'Eksik saat: ' + B.hours_missing, 'ETL işaretli saat: ' + B.hours_etl_flagged, 'Medyan oran: ' + B.median_ratio_excl_etl_flagged + ' (1.0 = önceki 4 haftanın aynı günü; ETL işaretli saatler hariç)', 'Temiz saat: ' + B.n_clean_hours + ' (baseline %70 altı: ' + B['n_clean_below_0.7'] + ', %130 üstü: ' + B['n_clean_above_1.3'] + ')'].join('<br>'); })() }}<br><br><b>Onayla:</b> ek incelemeyi de gördüm, sonucu kabul et<br><b>Reddet:</b> sonucu kabul etme, nedenini soracağız",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Karar",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Onayla"
+                  },
+                  {
+                    "option": "Reddet"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c8b4295d-5eab-4020-ab9b-76b26701c153",
+      "name": "EK ONAY FORMU",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "webhookId": "f4894d2a-be7e-4ef5-8ee9-bdd00c9f4102",
+      "position": [
+        1540,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/ask",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ soru: $('SORU').first().json.soru, karar: ({'Onayla':'onayla','Ek inceleme iste':'ek_inceleme','Reddet':'reddet'})[$('ONAY FORMU').first().json['Karar']] || $('ONAY FORMU').first().json['Karar'], karar2: ({'Onayla':'onayla','Reddet':'reddet'})[$('EK ONAY FORMU').first().json['Karar']] || $('EK ONAY FORMU').first().json['Karar'] }) }}",
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "666e3993-9708-4efb-a918-ab6c6d1c2320",
+      "name": "KARAR 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "932fa81f-f67a-41c1-a184-e47e35e8288f",
+              "leftValue": "={{ JSON.stringify($json).includes('\"nihai_durum\":\"reddedildi\"') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5af07232-734e-413d-868b-d66a45a5d438",
+      "name": "RET MI",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Ret nedeni",
+        "formDescription": "=<b>Sonucu reddettin.</b><br>Pencere: {{ $('ILK ISTEK').first().json.pencere.start.replace(/(\\d{4})-(\\d{2})-(\\d{2})/g, '$3.$2.$1') }} - {{ $('ILK ISTEK').first().json.pencere.end.replace(/(\\d{4})-(\\d{2})-(\\d{2})/g, '$3.$2.$1') }}<br>Nedenini ve dayandığın kaynağı yaz (kaynak boş bırakılabilir). İddian araç kanıtıyla sınanır ve kaydedilir; otomatik kabul edilmez ve sistemin kararını değiştirmez.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "İddia",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Veri hatası"
+                  },
+                  {
+                    "option": "Tatil / bayram"
+                  },
+                  {
+                    "option": "Hava"
+                  },
+                  {
+                    "option": "Deprem"
+                  },
+                  {
+                    "option": "Sapma yok"
+                  },
+                  {
+                    "option": "Diğer"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Açıklama",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Kaynak",
+              "fieldType": "text",
+              "requiredField": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e051cabf-7863-43c1-810b-37b65d3864ab",
+      "name": "RET FORMU",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "webhookId": "e7b0c1a4-bc35-4ae4-9171-a4f8f738385e",
+      "position": [
+        2220,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/feedback",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ start: $('ILK ISTEK').first().json.pencere.start, end: $('ILK ISTEK').first().json.pencere.end, iddia: ({'Veri hatası':'veri_hatasi','Tatil / bayram':'tatil','Hava':'hava','Deprem':'deprem','Sapma yok':'sapma_yok','Diğer':'diger'})[$('RET FORMU').first().json['İddia']] || $('RET FORMU').first().json['İddia'], aciklama: $('RET FORMU').first().json['Açıklama'], kaynak: $('RET FORMU').first().json['Kaynak'] || '' }) }}",
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "0723f73c-93e7-4b55-9810-69f869480ab6",
+      "name": "GERI BILDIRIM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2440,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Manuel tetikleyici": {
+      "main": [
+        [
+          {
+            "node": "SORU",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SORU": {
+      "main": [
+        [
+          {
+            "node": "ILK ISTEK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ILK ISTEK": {
+      "main": [
+        [
+          {
+            "node": "BEKLIYOR MU",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BEKLIYOR MU": {
+      "main": [
+        [
+          {
+            "node": "ONAY FORMU",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ONAY FORMU": {
+      "main": [
+        [
+          {
+            "node": "KARAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KARAR": {
+      "main": [
+        [
+          {
+            "node": "EK INCELEME MI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EK INCELEME MI": {
+      "main": [
+        [
+          {
+            "node": "EK ONAY FORMU",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RET MI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EK ONAY FORMU": {
+      "main": [
+        [
+          {
+            "node": "KARAR 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KARAR 2": {
+      "main": [
+        [
+          {
+            "node": "RET MI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RET MI": {
+      "main": [
+        [
+          {
+            "node": "RET FORMU",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RET FORMU": {
+      "main": [
+        [
+          {
+            "node": "GERI BILDIRIM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
